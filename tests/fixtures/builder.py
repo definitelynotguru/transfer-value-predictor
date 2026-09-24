@@ -196,6 +196,26 @@ def build(raw_dir: Path) -> None:
     play(109, [2020, 2021])
     transfer(109, "2022-07-21", 9_000_000)
 
+    valuations = []
+
+    def valuation(pid, date, value):
+        valuations.append(
+            {
+                "player_id": pid,
+                "date": date,
+                "market_value_in_eur": value,
+                "current_club_name": "Club 1",
+                "current_club_id": 1,
+                "player_club_domestic_competition_id": "GB1",
+            }
+        )
+
+    # 101: same-day and later valuations must be ignored; the only earlier one is stale.
+    valuation(101, "2022-01-01", 10_000_000)
+    valuation(101, "2023-07-15", 99_000_000)
+    valuation(101, "2023-08-01", 99_000_000)
+    # 108 has no valuation at all.
+
     for i, d in enumerate(FILLER_DATES):
         pid = 200 + i
         player(pid, f"Filler {i}", f"{1990 + i % 8}-0{1 + i % 9}-15", PLAYER_POS[i % 4])
@@ -207,7 +227,9 @@ def build(raw_dir: Path) -> None:
             minutes=60 + 2 * i,
             lineup=LINEUP_POS[i % 4],
         )
-        transfer(pid, d, 4_000_000 + 1_500_000 * i + 2_000_000 * (i % 3))
+        fee = 4_000_000 + 1_500_000 * i + 2_000_000 * (i % 3)
+        transfer(pid, d, fee)
+        valuation(pid, (pd.Timestamp(d) - pd.Timedelta(days=30)).date().isoformat(), 0.9 * fee)
     transfer(200, "2018-07-01", 3_000_000, 2, 1)  # outside the study window
 
     comps = pd.DataFrame(
@@ -233,6 +255,7 @@ def build(raw_dir: Path) -> None:
         "game_lineups": pd.DataFrame(lineups),
         "players": pd.DataFrame(players),
         "transfers": pd.DataFrame(transfers),
+        "player_valuations": pd.DataFrame(valuations),
     }
     raw_dir.mkdir(parents=True, exist_ok=True)
     for name, df in tables.items():

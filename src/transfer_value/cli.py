@@ -136,6 +136,34 @@ def predict(
 
 
 @app.command()
+def followup(
+    config: Annotated[Path, typer.Option("--config", help="Path to followup.yaml")] = Path(
+        "followup.yaml"
+    ),
+) -> None:
+    """Post-holdout follow-up (exposure, time terms, market-value comparator). Not a headline."""
+    from transfer_value.followup import load_followup_config, run_followup
+
+    try:
+        r = run_followup(load_followup_config(config))
+    except Exception as exc:
+        _fail(exc)
+    for name, v in r["variants"].items():
+        star = "*" if v["selected_by_cv"] else " "
+        typer.echo(
+            f" {star} {name:<24} CV log-MAE {v['cv_mean_log_mae']:.4f}  "
+            f"test MAE €{v['test']['mae_eur'] / 1e6:6.2f}m"
+        )
+    mv = r["market_value_comparator"]
+    typer.echo(
+        f"market value matched {mv['matched_rows']}/{mv['test_rows']} test rows: MAE "
+        f"€{mv['methods']['market_value']['mae_eur'] / 1e6:.2f}m vs headline "
+        f"€{mv['methods']['headline']['mae_eur'] / 1e6:.2f}m"
+    )
+    typer.echo("followup ok (* = selected by CV; not a headline result)")
+
+
+@app.command()
 def pipeline(config: ConfigOpt = Path("config.yaml")) -> None:
     """feasibility → ingest → build-features → train → evaluate. Never downloads."""
     feasibility(config, None)

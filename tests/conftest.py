@@ -45,6 +45,18 @@ FIXTURE_CONFIG = {
 }
 
 
+VALUATIONS_FILE = "player_valuations.csv.gz"
+
+FIXTURE_FOLLOWUP = {
+    "headline_config": "config.yaml",
+    "headline_run_id": None,
+    "source": {"base_url": "file://fixture", "files": [VALUATIONS_FILE], "sha256": {}},
+    "data": {"raw_dir": "data/raw", "output_dir": "artifacts/followup"},
+    "price_level": {"window_days": 365, "min_transfers": 1},
+    "market_value": {"file": VALUATIONS_FILE, "max_staleness_days": 365},
+}
+
+
 def make_env(root: Path, overrides: dict | None = None) -> Path:
     raw = root / "data" / "raw"
     build(raw)
@@ -56,12 +68,13 @@ def make_env(root: Path, overrides: dict | None = None) -> Path:
             "sha256": sha256_file(raw / f),
             "acquired_utc": "fixture",
         }
-        for f in RAW_FILES.values()
+        for f in [*RAW_FILES.values(), VALUATIONS_FILE]
     ]
     write_source_manifest(raw / "SOURCE.md", entries, FIXTURE_CONFIG["source"])
     cfg = {**FIXTURE_CONFIG, **(overrides or {})}
     path = root / "config.yaml"
     path.write_text(yaml.safe_dump(cfg, sort_keys=False))
+    (root / "followup.yaml").write_text(yaml.safe_dump(FIXTURE_FOLLOWUP, sort_keys=False))
     return path
 
 

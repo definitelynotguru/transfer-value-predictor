@@ -20,6 +20,7 @@ guarantee those bytes remain downloadable. Keep a private copy if exact reproduc
 | `competitions.csv.gz` | 2,242 | `8924ddfbc0e9989f4a42a3c32ebb6faa671614625086d7fa84353f955352ea88` | 2026-09-24T17:43:05Z | Sat, 05 Sep 2026 09:12:02 GMT |
 | `game_lineups.csv.gz` | 125,814,089 | `5e83d6fad28364aadfea608013700cf09990062eede1ad9ef189189b0af47ba2` | 2026-09-24T17:43:15Z | Sat, 05 Sep 2026 09:12:19 GMT |
 | `games.csv.gz` | 4,995,595 | `142561989017d379bcf9e72bad0b87e0996bae0e7b710ebb3def9255f464c741` | 2026-09-24T17:43:05Z | Sat, 05 Sep 2026 09:12:20 GMT |
+| `player_valuations.csv.gz` | 7,197,935 | `608e32e5ad2231074f3505c469ad727be66d7e6efda6af918afd85379439631d` | 2026-09-24T18:21:38Z | Sat, 05 Sep 2026 09:12:22 GMT |
 | `players.csv.gz` | 4,389,958 | `d22e407981d5b51a79bf8ff59835729f3526f7dc3495a6d8ed2f852ed2e86403` | 2026-09-24T17:43:03Z | Sat, 05 Sep 2026 09:12:22 GMT |
 | `transfers.csv.gz` | 5,809,514 | `90326983daf7e6ac7aabdfe62b90936d9bf1dd2171e53dec75c3751eb1620a83` | 2026-09-24T17:43:02Z | Sat, 05 Sep 2026 09:12:23 GMT |
 
@@ -69,6 +70,15 @@ guarantee those bytes remain downloadable. Keep a private copy if exact reproduc
     "acquired_utc": "2026-09-24T17:43:05Z",
     "upstream_last_modified": "Sat, 05 Sep 2026 09:12:20 GMT",
     "upstream_etag": "9d56854283f5d47601688ffbd3baaedd"
+  },
+  {
+    "file": "player_valuations.csv.gz",
+    "url": "https://pub-e682421888d945d684bcae8890b0ec20.r2.dev/data/player_valuations.csv.gz",
+    "bytes": 7197935,
+    "sha256": "608e32e5ad2231074f3505c469ad727be66d7e6efda6af918afd85379439631d",
+    "acquired_utc": "2026-09-24T18:21:38Z",
+    "upstream_last_modified": "Sat, 05 Sep 2026 09:12:22 GMT",
+    "upstream_etag": "087cb1d21a2469ff4a597b6ca86cced4"
   },
   {
     "file": "players.csv.gz",

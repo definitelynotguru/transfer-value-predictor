@@ -37,6 +37,7 @@ PUBLISH = {
     "figures/predicted_vs_actual.png": ART / "figures" / "predicted_vs_actual.png",
     "figures/residuals_vs_predicted.png": ART / "figures" / "residuals_vs_predicted.png",
     "figures/residual_distribution.png": ART / "figures" / "residual_distribution.png",
+    "followup/followup.json": ART / "followup" / "followup.json",
 }
 
 
@@ -63,6 +64,11 @@ def collect_artifacts() -> dict[str, bytes] | None:
         other = json.loads(PUBLISH[name].read_text()).get("run_id")
         if other != rid:
             raise ReportError(f"{name} run_id {other} != manifest run_id {rid}")
+    fup = json.loads(PUBLISH["followup/followup.json"].read_text())
+    if fup["headline_run_id"] != rid:
+        raise ReportError(f"follow-up was built on run {fup['headline_run_id']}, not {rid}")
+    if fup["headline_metrics_sha256"] != manifest["artifact_sha256"]["metrics.json"]:
+        raise ReportError("follow-up was built against different headline metrics; rerun it")
     return {rel: src.read_bytes() for rel, src in PUBLISH.items()}
 
 
@@ -297,6 +303,8 @@ def render(docs: dict[str, bytes]) -> dict[str, str]:
         "disclosed here."
     )
 
+    blocks.update(render_followup(j["followup/followup.json"]))
+
     env = man["environment"]
     deps = ", ".join(f"{k} {v}" for k, v in env["dependencies"].items())
     src = table(
@@ -312,6 +320,131 @@ def render(docs: dict[str, bytes]) -> dict[str, str]:
         f"- Config sha256 `{man['config_hash']}`; seed {man['seed']}; study window "
         f"{sw['transfer_start']} to {sw['transfer_end_exclusive']} (exclusive), T "
         f"{sw['test_start']}\n\n" + src
+    )
+    return blocks
+
+
+def _ci(c: dict) -> str:
+    return f"{m(c['ci_low'])} to {m(c['ci_high'])}"
+
+
+def render_followup(f: dict) -> dict[str, str]:
+    blocks = {}
+    rows = []
+    for name in f["variant_order"]:
+        v = f["variants"][name]
+        sel = v["selected_by_cv"]
+        rows.append(
+            [
+                f"**{name}**" if sel else name,
+                v["model"],
+                f"{v['cv_mean_log_mae']:.4f}",
+                " / ".join(f"{x:.3f}" for x in v["cv_fold_log_mae"]),
+                "yes" if sel else "",
+                m(v["test"]["mae_eur"]),
+                f"{v['test']['log_mae']:.3f}",
+                f"{v['test_mean_log_residual']:+.3f}",
+            ]
+        )
+    c = f["followup_vs_headline"]["comparisons"]["headline"]
+    b = f["followup_vs_headline"]
+    coef = {r["term"]: r for r in f["selected_coefficients"]}
+    time_terms = [t for t in ("cycle_trend", "league_price_level") if t in coef]
+    time_note = "".join(
+        f" `{t}` coefficient {coef[t]['coef_log1p']:+.3f} per training SD "
+        f"(SD {coef[t]['train_sd']:.3g})."
+        for t in time_terms
+    )
+    levels = f["price_level"]["by_cycle_median_level_eur"]
+    blocks["followup"] = (
+        table(
+            [
+                "Variant",
+                "Best model",
+                "CV log-MAE",
+                "Per fold",
+                "Selected by CV",
+                "Test MAE",
+                "Test log-MAE",
+                "Mean test log residual",
+            ],
+            rows,
+            "llrllrrr",
+        )
+        + f"\n\nSelected by CV: **{f['selected_variant']}** ({f['selected_model']}).{time_note} "
+        f"Paired bootstrap, follow-up minus headline test MAE: {m(c['observed_delta_mae_eur'])} "
+        f"(95% CI {_ci(c)}; {b['replicates']:,} replicates, player clusters). "
+        "Test columns for non-selected variants are descriptive only.\n\n"
+        "Median league price level by cycle: "
+        + ", ".join(f"{k}: {m(v, 1)}" for k, v in levels.items())
+        + "."
+    )
+
+    w = f["window_diagnostic"]
+    rows = []
+    for name, label in (
+        ("off_season", "Off-season (no season in progress)"),
+        ("in_season", "In-season"),
+    ):
+        t, tr = w["test"][name], w["train_in_sample"][name]
+        rows.append(
+            [
+                label,
+                f"{tr['rows']} / {t['rows']}",
+                f"{t['mean_season_equivalents']:.2f}",
+                f"{tr['mean_raw_minutes']:,.0f}",
+                f"{tr['mean_log_residual__headline']:+.3f}",
+                f"{tr['mean_log_residual__followup']:+.3f}",
+                f"{t['mean_log_residual__headline']:+.3f}",
+                f"{t['mean_log_residual__followup']:+.3f}",
+            ]
+        )
+    blocks["window"] = table(
+        [
+            "Window",
+            "Train / test rows",
+            "Test lookback seasons",
+            "Train raw minutes",
+            "Train residual (headline)",
+            "Train residual (follow-up)",
+            "Test residual (headline)",
+            "Test residual (follow-up)",
+        ],
+        rows,
+        "lrrrrrrr",
+    ) + (
+        "\n\nResiduals are mean `log1p(fee) − prediction`; train columns are in-sample. "
+        "Lookback seasons count an ongoing season by the share of its games played before D."
+    )
+
+    mv = f["market_value_comparator"]
+    labels = {
+        "train_median": "Train median fee",
+        "headline": "Headline model (LinearRegression)",
+        "followup": f"Follow-up model ({f['selected_variant']})",
+        "market_value": "Transfermarkt market value (comparator)",
+    }
+    rows = [
+        [
+            labels[k],
+            m(mv["methods"][k]["mae_eur"]),
+            m(mv["methods"][k]["median_ae_eur"]),
+            f"{mv['methods'][k]['log_mae']:.3f}",
+        ]
+        for k in ("train_median", "headline", "followup", "market_value")
+    ]
+    boots = "; ".join(
+        f"{labels[ref].split(' (')[0].lower()} minus market value "
+        f"{m(bb['comparisons']['market_value']['observed_delta_mae_eur'])} "
+        f"(95% CI {_ci(bb['comparisons']['market_value'])})"
+        for ref, bb in mv["bootstrap"].items()
+    )
+    blocks["market_value"] = (
+        table(["Method", "Test MAE", "Median AE", "Test log-MAE"], rows, "lrrr")
+        + f"\n\nMatched test rows: {mv['matched_rows']} of {mv['test_rows']} (rule: {mv['rule']}; "
+        f"median valuation age {mv['median_valuation_age_days']:.0f} days). "
+        f"Reported fee above market value in {mv['share_fee_above_market_value']:.0%} of rows. "
+        f"Paired bootstrap: {boots}."
     )
     return blocks
 

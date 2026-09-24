@@ -6,6 +6,8 @@
 
 Short answer: a plain linear model on `log1p(fee)` beats every naive baseline by about €4m of mean absolute error, and the bootstrap interval excludes zero. It is still wrong by €11m on an average transfer, it under-predicts 70% of test transfers, and it misses elite and Saudi-bound forwards by €45m to €65m. Jump to the [five worst misses](#five-worst-misses).
 
+A [follow-up designed after the holdout was opened](#follow-up-after-the-holdout-not-a-headline-result) adds exposure-normalized inputs and a fee-inflation term, picked by the same training-window CV. It cuts test MAE by about €1.6m. Transfermarkt's own market value, shown as a comparison row only, still beats every model here. The headline numbers below are the pre-registered run and are unchanged.
+
 ## What this is, and what it is not
 
 - **Is:** a leakage-controlled, time-split study of paid permanent transfers of players with enough recent PL minutes, **regardless of destination club**. One row per transfer.
@@ -88,7 +90,7 @@ The distribution is centered above zero with a long right tail. The model's miss
 
 Two patterns stand out, both computed after model selection and not fed back into the model:
 
-1. **Time drift.** In-sample residuals climb from strongly negative in the 2014 cycle to positive by 2023. Fees are nominal euros and the model has no time term, so it effectively predicts an average-era fee and lands low on the latest cycles. A pre-registered time trend or fee deflator is the obvious next experiment. Adding one now, after seeing the test set, would be tuning on the holdout, so it is not done here.
+1. **Time drift.** In-sample residuals climb from strongly negative in the 2014 cycle to positive by 2023. Fees are nominal euros and the model has no time term, so it effectively predicts an average-era fee and lands low on the latest cycles. Adding a time term after seeing the test set would be tuning on the holdout, so the headline model does not get one. The [follow-up section](#follow-up-after-the-holdout-not-a-headline-result) tries it as a separately labelled experiment.
 2. **Retransformation.** `expm1` of a log-scale prediction estimates something closer to a conditional median than a mean. That pulls euro predictions down for a right-skewed target. No smearing correction is applied.
 
 ## Five worst misses
@@ -117,6 +119,68 @@ The five largest absolute euro errors of the selected model, ranked deterministi
 
 Common thread: three of five had limited PL minutes in the lookback, two went to Saudi clubs, and the one elite striker with a full record was still compressed toward the middle. Residuals alone cannot say which factor dominated in any case.
 
+## Follow-up after the holdout (not a headline result)
+
+Everything in this section was designed **after** the headline test set had been scored, in response to review. It is reported separately so the pre-registered numbers above stay honest. Ground rules:
+
+- The headline run is read and verified by hash, never rewritten. The follow-up lives in its own config ([`followup.yaml`](followup.yaml)) and stage (`tvp followup`), so the headline config hash and run ID do not change.
+- Variant and model choice use only the same expanding CV folds inside the training window. The unmodified headline inputs are variant #1 and win CV ties. As a check, the stage reproduces the headline CV score and test predictions exactly before it does anything else.
+- Test scores for variants that CV did not pick are shown for transparency only. Picking the variant with the best test score would be tuning on the holdout.
+
+Two problems prompted it:
+
+1. **Winter transfers see more football.** A January transfer's lookback is two completed seasons *plus* half of the current one, so raw totals (goals, assists, minutes, appearances) are inflated compared with a summer transfer. The **exposure** inputs divide by what was available: `minutes_share` = minutes / (90 × team league matches available before D), `appearance_share` likewise, and goals and assists per lookback season, where an ongoing season counts as the share of its games played before D. Per-90 rates and age are unchanged.
+2. **Nominal fee drift.** Two candidate time terms: `cycle_trend` (the transfer cycle as a number, extrapolated linearly), and `league_price_level`, the log of the median positive fee of every move in the source where the buying or selling club played in the PL that cycle, over the 365 days before D. The price level only uses moves dated strictly before D, so a transfer's own fee never enters it. It does use earlier test-period fees for later test transfers, which is information a real user would have had on that date.
+
+That makes six variants (headline or exposure inputs, each with no time term, trend, or price level), each crossed with the same 13-model grid.
+
+<!-- BEGIN:followup -->
+| Variant | Best model | CV log-MAE | Per fold | Selected by CV | Test MAE | Test log-MAE | Mean test log residual |
+| --- | --- | ---: | --- | --- | ---: | ---: | ---: |
+| headline | linear | 0.8097 | 0.757 / 0.782 / 0.890 |  | €11.20m | 0.719 | +0.289 |
+| headline+trend | ridge(alpha=10.0) | 0.7966 | 0.832 / 0.763 / 0.795 |  | €9.43m | 0.643 | -0.116 |
+| headline+price_level | ridge(alpha=1.0) | 0.7902 | 0.764 / 0.783 / 0.823 |  | €9.71m | 0.652 | +0.075 |
+| exposure | ridge(alpha=1.0) | 0.8020 | 0.772 / 0.766 / 0.868 |  | €10.93m | 0.706 | +0.275 |
+| exposure+trend | elastic_net(alpha=0.1, l1_ratio=0.15) | 0.7908 | 0.814 / 0.752 / 0.807 |  | €9.65m | 0.648 | -0.062 |
+| **exposure+price_level** | ridge(alpha=1.0) | 0.7864 | 0.781 / 0.768 / 0.810 | yes | €9.55m | 0.646 | +0.066 |
+
+Selected by CV: **exposure+price_level** (ridge(alpha=1.0)). `league_price_level` coefficient +0.167 per training SD (SD 0.24). Paired bootstrap, follow-up minus headline test MAE: −€1.65m (95% CI −€2.24m to −€1.09m; 5,000 replicates, player clusters). Test columns for non-selected variants are descriptive only.
+
+Median league price level by cycle: 2014: €9.8m, 2015: €6.0m, 2016: €9.5m, 2017: €9.4m, 2018: €12.2m, 2019: €11.7m, 2020: €12.5m, 2021: €12.1m, 2022: €13.9m, 2023: €15.0m, 2024: €14.1m, 2025: €16.3m.
+<!-- END:followup -->
+
+Reading: both time terms help in CV, and the price level helps most. Exposure normalization on its own barely moves CV. With a time term, CV prefers it by a small margin. The selected follow-up model removes most of the systematic under-prediction on the test set (compare the mean log residual with the headline's), and the improvement over the headline is larger than the bootstrap noise. The lowest test MAE actually belongs to `headline+trend` (€9.43m), which CV did not pick. It overshoots on the log scale (mean residual below zero), and choosing it now would be selecting on the test set. It is still one post-hoc experiment on one holdout, so read it as "the drift diagnosis was right", not as a new, validated headline.
+
+### Did the winter-window fix work?
+
+<!-- BEGIN:window -->
+| Window | Train / test rows | Test lookback seasons | Train raw minutes | Train residual (headline) | Train residual (follow-up) | Test residual (headline) | Test residual (follow-up) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Off-season (no season in progress) | 304 / 124 | 2.00 | 2,459 | +0.093 | +0.083 | +0.434 | +0.206 |
+| In-season | 176 / 90 | 2.20 | 2,661 | -0.161 | -0.143 | +0.089 | -0.126 |
+
+Residuals are mean `log1p(fee) − prediction`; train columns are in-sample. Lookback seasons count an ongoing season by the share of its games played before D.
+<!-- END:window -->
+
+Not really. Exposure normalization is the right accounting, and in-season rows do carry about 0.2 extra seasons of lookback. But the residual gap between windows barely changes when the inputs are normalized. In-season transfers are still predicted too high relative to off-season transfers, in training and in test. The gap does not come from inflated totals. More plausible explanations (hypotheses, not tested): mid-season deals are a different market (relegation-threatened sellers, injury cover, less time to find competing bidders), and the ongoing half-season is the freshest evidence, so buyers may weight it differently from older seasons.
+
+### Transfermarkt market value as a comparator
+
+Market value is **never** a model input. Here it is scored as if it were a prediction: for each test transfer, the latest Transfermarkt valuation dated strictly before the transfer date and no more than 365 days old.
+
+<!-- BEGIN:market_value -->
+| Method | Test MAE | Median AE | Test log-MAE |
+| --- | ---: | ---: | ---: |
+| Train median fee | €15.25m | €9.20m | 0.929 |
+| Headline model (LinearRegression) | €11.20m | €6.54m | 0.719 |
+| Follow-up model (exposure+price_level) | €9.55m | €6.32m | 0.646 |
+| Transfermarkt market value (comparator) | €6.95m | €4.50m | 0.496 |
+
+Matched test rows: 214 of 214 (rule: latest valuation with valuation_date < transfer_date and at most 365 days old; median valuation age 54 days). Reported fee above market value in 54% of rows. Paired bootstrap: follow-up model minus market value €2.60m (95% CI €1.22m to €3.98m); headline model minus market value €4.25m (95% CI €2.70m to €5.79m).
+<!-- END:market_value -->
+
+Market value beats both models comfortably. That is expected rather than embarrassing. Transfermarkt's valuers see things this feature set leaves out by design, such as contract length, injuries, non-PL performance, and transfer rumours. A valuation posted a few weeks before a deal may already reflect the negotiation. So this is a reference point, not a ceiling, and beating or losing to it proves neither leakage nor purity.
+
 ## Method
 
 - **Cohort.** Paid permanent transfers (`fee > 0`) whose player has at least 90 Premier League minutes in the lookback window. Destination is unrestricted.
@@ -136,7 +200,7 @@ Common thread: three of five had limited PL minutes in the lookback, two went to
 - [x] Every contributing appearance satisfies `match_date < transfer_date`, and same-day matches are excluded. See [`tests/test_leakage.py`](tests/test_leakage.py).
 - [x] Source season metadata defines the two completed seasons and any in-progress prefix. See [`tests/test_features.py`](tests/test_features.py) for the summer gap and the extended 2019/20 season.
 - [x] The current-position fallback is flagged and reported with total, train, and test percentages (funnel section below).
-- [x] No destination-club, fee-derived, or market-value inputs. The pipeline rejects forbidden columns: [`features.assert_allowed_inputs`](src/transfer_value/features.py).
+- [x] No destination-club, fee-derived, or market-value inputs. The pipeline rejects forbidden columns: [`features.assert_allowed_inputs`](src/transfer_value/features.py). The one exception is the follow-up's `league_price_level`, a trailing median of *other*, strictly earlier transfers' fees. It never includes the row's own fee, and it is not part of the headline model.
 - [x] Joins use IDs only, and no transfer ID appears in both train and test. See [`tests/test_split.py`](tests/test_split.py).
 - [x] Scalers and encoders are fit inside each fold's training rows, through one `Pipeline`.
 - [x] Baselines use training labels only, including the position-median fallback. See [`tests/test_evaluate.py`](tests/test_evaluate.py).
@@ -225,6 +289,8 @@ One path, $0, no API keys. The only network step is the explicit download.
 uv sync --locked --extra dev
 uv run --locked python scripts/fetch_data.py --config config.yaml   # ~190 MB, verified against pinned hashes
 uv run --locked tvp pipeline --config config.yaml                    # feasibility → ingest → features → train → evaluate
+uv run --locked python scripts/fetch_data.py --config followup.yaml # follow-up only: player_valuations.csv.gz (~7 MB)
+uv run --locked tvp followup --config followup.yaml                  # post-holdout follow-up; reads, never rewrites, the headline run
 uv run --locked python scripts/build_report.py --config config.yaml  # publish docs/results/ and refresh README numbers
 ```
 
@@ -274,13 +340,14 @@ This study does **not** establish:
 - **Selection bias:** only known, positive-fee permanent transfers of PL-active players. Undisclosed fees, free transfers, and all loans (including paid loan fees) are excluded, and many newcomers and non-PL paths are out of scope.
 - **Reported fees:** Transfermarkt figures are reported or estimated, not ledger values. Add-ons may or may not be included. The recorded transfer date may follow the agreement date.
 - **Retrospective position** for proxy rows (under 1% here).
-- **Nominal EUR** with no inflation adjustment, and the drift is visible in the residuals.
+- **Nominal EUR** with no inflation adjustment in the headline model, and the drift is visible in the residuals. The follow-up's price-level term addresses this, but only post hoc.
+- **Transfer window:** in-season (mostly January) transfers are over-predicted relative to summer ones, and normalizing for the extra half season does not close the gap.
 - **Elite outliers:** the linear model compresses the top of the market. That is a finding, not a bug to hide.
 - **PL-only lookback:** a player's record in other leagues is invisible, which hurts recent arrivals (Diaby).
 - **Coverage drift:** transfer histories come from each player's latest profile scrape, so early cycles are sparse (see rows per cycle in the funnel).
 - **Incomplete final window:** the snapshot stops in July 2026, so the 2026 summer window is excluded rather than half-counted.
 - **Possible loans or buy-backs** among positive fees are flagged in the funnel section and kept.
-- Transfermarkt market value, if ever added as a comparator, is a comparator and not a ceiling. Beating or losing to it proves neither leakage nor purity.
+- Transfermarkt market value is shown as a comparator, not a ceiling. It beats every model here, and that proves neither leakage nor purity.
 
 ## Reproduce
 
@@ -301,6 +368,12 @@ This study does **not** establish:
 <!-- END:reproduce -->
 
 Commands: the quickstart above. Every published number, table, and figure comes from one run, identified by the run ID and recorded in [`docs/results/manifest.json`](docs/results/manifest.json). `scripts/build_report.py --check` fails if the README drifts from those files. Two runs with the same source bytes, config, and lockfile produce identical metrics, and the fixture test suite checks this.
+
+## How this was built
+
+The spec ([SPEC.md](SPEC.md)) and plan ([PLAN.md](PLAN.md)) were written and reviewed by hand over several rounds. The implementation, tests, and this README were then written by an AI coding agent (Factory's Droid) in one working session, following that plan, with the owner reviewing results and asking for changes. That is why the first three commits land within seven minutes of each other: the work was built and checked locally first, then committed in three logical chunks. The commit timestamps show when the code was committed, not how long it took to build. The follow-up section came from the owner's review of the first published run.
+
+What keeps this honest regardless of who typed it: pinned source hashes, a pinned config, one run ID behind every published number, `build_report.py --check` in CI, and a fixture test suite that checks the leakage rules directly.
 
 ---
 

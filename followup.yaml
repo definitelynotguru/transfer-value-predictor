@@ -1,0 +1,29 @@
+# Follow-up experiments designed AFTER the headline holdout was opened (run 751f64196525f1a9).
+# Kept out of config.yaml so the pre-registered headline config hash and run ID stay untouched.
+# Nothing here feeds back into the headline model, metrics, or README headline table.
+
+headline_config: config.yaml
+headline_run_id: 751f64196525f1a9
+
+source:
+  base_url: https://pub-e682421888d945d684bcae8890b0ec20.r2.dev/data
+  snapshot_note: Upstream collection paused; games end 2026-07-06, appearances end 2026-06-28.
+  files:
+    - player_valuations.csv.gz
+  sha256:
+    player_valuations.csv.gz: 608e32e5ad2231074f3505c469ad727be66d7e6efda6af918afd85379439631d
+
+data:
+  raw_dir: data/raw
+  output_dir: artifacts/followup
+
+# Trailing league price level: median positive fee of transfers into or out of a club playing
+# in the PL in that transfer's cycle season, over [D - window_days, D).
+price_level:
+  window_days: 365
+  min_transfers: 30
+
+# Transfermarkt market value: comparator row only, never a model input.
+market_value:
+  file: player_valuations.csv.gz
+  max_staleness_days: 365

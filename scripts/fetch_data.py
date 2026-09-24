@@ -22,7 +22,7 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from transfer_value.source import write_source_manifest  # noqa: E402
+from transfer_value.source import read_source_manifest, write_source_manifest  # noqa: E402
 
 
 def sha256_file(path: Path) -> str:
@@ -94,8 +94,13 @@ def main() -> int:
         )
         print(f"  ok {dest.stat().st_size:,} bytes sha256={digest}")
 
-    write_source_manifest(raw_dir / "SOURCE.md", entries, src)
-    print(f"wrote {raw_dir / 'SOURCE.md'}")
+    # Merge so a second config (e.g. followup.yaml) adds its files without dropping others.
+    manifest = raw_dir / "SOURCE.md"
+    fetched = {e["file"] for e in entries}
+    if manifest.exists():
+        entries += [e for e in read_source_manifest(manifest) if e["file"] not in fetched]
+    write_source_manifest(manifest, entries, src)
+    print(f"wrote {manifest}")
     return 0
 
 

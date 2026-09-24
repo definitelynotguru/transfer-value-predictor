@@ -81,6 +81,7 @@ def paired_cluster_bootstrap(
     replicates: int,
     seed: int,
     confidence: float,
+    names: tuple[str, str] = ("model", "baseline"),
 ) -> dict:
     """CI on MAE(reference) − MAE(other) with identical resampled clusters per replicate.
 
@@ -104,9 +105,9 @@ def paired_cluster_bootstrap(
         observed = float(abs_err[reference].mean() - abs_err[k].mean())
         lo, hi = (float(x) for x in np.quantile(delta, [alpha, 1 - alpha]))
         if hi < 0:
-            verdict = "model MAE lower; interval excludes zero"
+            verdict = f"{names[0]} MAE lower; interval excludes zero"
         elif lo > 0:
-            verdict = "baseline MAE lower; interval excludes zero"
+            verdict = f"{names[1]} MAE lower; interval excludes zero"
         else:
             verdict = "too uncertain to call; interval includes zero"
         out[k] = {
