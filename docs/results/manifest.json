@@ -1,0 +1,184 @@
+{
+  "artifact_sha256": {
+    "coefficients.csv": "ce733cc854c0bf5ce3233f0fefe1fc6fc5e69abda4bfc4eb17be293fe789a538",
+    "cv_results.json": "aabaeeb59fd0300db736e5f7b99ff934ce388b0c77b7aac478e447d39d565de2",
+    "figures/predicted_vs_actual.png": "c3c6837b105b22988389721d2b5b21c01a66a426c63470de113a4dcb8e71c9e0",
+    "figures/residual_distribution.png": "cce716959cfa618575f6035d0e002ee76c5e00c07a76122005b6872ced172a90",
+    "figures/residuals_vs_predicted.png": "0b0b4a97a1eb50cf1ee0ab9d451ed0ea2defea7e19f81ab274a769679086b4f4",
+    "metrics.json": "2658b0a8724d45fbd6d16a792d1b3ce7ee3f78ead325f567c6c5b3b3a0f11919",
+    "model.joblib": "40892f02a7dce9d96c605770f222091317c6ffa7f6452da8d9c4ac0b406e4e43",
+    "models/elastic_net.joblib": "313ea9648767994b584921f8b16606d7325b09e7ffebfc39061431651c9c72b2",
+    "models/linear.joblib": "40892f02a7dce9d96c605770f222091317c6ffa7f6452da8d9c4ac0b406e4e43",
+    "models/ridge.joblib": "3b41ec3aa39a24779d3b563aa0ec06f40d32d24c12341f826a2e55f2d0bd2e70",
+    "test_predictions.parquet": "e387bb327b48acea30e0ab757aac87a9aff6ab391fe0fc44217a8bb8494c4fbd",
+    "worst_misses.json": "34130d5ca314dbf595249fc1ef919b3c4ae9babf5add87f4e38636e454e4ee54",
+    "worst_misses.md": "0ff132dec8c416d62571b77d190dd430a3b4a62465832ede8ec68c1664100a2c"
+  },
+  "code_revision": {
+    "commit": "d6df8bc7cc6c00896fc22734481937416f1b5a26",
+    "dirty": false
+  },
+  "config": {
+    "competition": {
+      "code": "premier-league",
+      "games_per_season": 380,
+      "ids": [
+        "GB1"
+      ]
+    },
+    "cv": {
+      "min_train_rows": 80,
+      "min_validation_rows": 20,
+      "n_folds": 3
+    },
+    "data": {
+      "artifact_dir": "artifacts",
+      "interim_dir": "data/interim",
+      "processed_dir": "data/processed",
+      "raw_dir": "data/raw"
+    },
+    "fees": {
+      "currency": "EUR",
+      "encoding": "positive_is_paid_permanent"
+    },
+    "runtime": {
+      "bootstrap_confidence": 0.95,
+      "bootstrap_replicates": 5000,
+      "bootstrap_seed": 42,
+      "random_state": 42
+    },
+    "source": {
+      "base_url": "https://pub-e682421888d945d684bcae8890b0ec20.r2.dev/data",
+      "files": [
+        "appearances.csv.gz",
+        "transfers.csv.gz",
+        "players.csv.gz",
+        "games.csv.gz",
+        "competitions.csv.gz",
+        "game_lineups.csv.gz",
+        "clubs.csv.gz"
+      ],
+      "sha256": {
+        "appearances.csv.gz": "e096c2b158fc3d52c4550526c4d4850dd62f31007652f4bcae112eadb1646802",
+        "clubs.csv.gz": "aa57ab56e87faffaea1e8697439a32caf10116d8f2f2dfb3a57193c0bb1d641b",
+        "competitions.csv.gz": "8924ddfbc0e9989f4a42a3c32ebb6faa671614625086d7fa84353f955352ea88",
+        "game_lineups.csv.gz": "5e83d6fad28364aadfea608013700cf09990062eede1ad9ef189189b0af47ba2",
+        "games.csv.gz": "142561989017d379bcf9e72bad0b87e0996bae0e7b710ebb3def9255f464c741",
+        "players.csv.gz": "d22e407981d5b51a79bf8ff59835729f3526f7dc3495a6d8ed2f852ed2e86403",
+        "transfers.csv.gz": "90326983daf7e6ac7aabdfe62b90936d9bf1dd2171e53dec75c3751eb1620a83"
+      },
+      "snapshot_note": "Upstream collection paused; games end 2026-07-06, appearances end 2026-06-28."
+    },
+    "split": {
+      "min_test_rows": 40,
+      "min_total_rows": 200,
+      "test_start": "2024-05-20"
+    },
+    "study": {
+      "include_cards": false,
+      "min_minutes": 90,
+      "position_policy": "historical_then_proxy",
+      "prediction_as_of": "2026-05-25",
+      "season_ids": [
+        2014,
+        2015,
+        2016,
+        2017,
+        2018,
+        2019,
+        2020,
+        2021,
+        2022,
+        2023,
+        2024,
+        2025
+      ],
+      "source_seasons": [
+        2012,
+        2013,
+        2014,
+        2015,
+        2016,
+        2017,
+        2018,
+        2019,
+        2020,
+        2021,
+        2022,
+        2023,
+        2024,
+        2025
+      ],
+      "transfer_end_exclusive": "2026-05-25",
+      "transfer_start": "2014-05-12"
+    }
+  },
+  "config_hash": "feca52cf88bc9a765a35b90729d6049e8b503ef67ecf9395c7eddddea4ddc919",
+  "environment": {
+    "dependencies": {
+      "joblib": "1.6.0",
+      "matplotlib": "3.11.2",
+      "numpy": "2.4.6",
+      "pandas": "3.0.6",
+      "pyarrow": "25.0.1",
+      "scikit-learn": "1.9.1",
+      "typer": "0.27.2"
+    },
+    "lockfile_sha256": "cecc118ae36a98afa52f2dfdbf42120bc3a4fbc66f4913bb9acb52d53fa253b9",
+    "package_version": "0.1.0",
+    "python": "3.11.15"
+  },
+  "features_fingerprint": "762ce99e249c02604cb7d10633bc9f51e9b231181fc44cb185e243348d300bdc",
+  "retransform": "max(expm1(prediction), 0)",
+  "run_id": "751f64196525f1a9",
+  "schema_version": 1,
+  "seed": 42,
+  "selected_model": "linear",
+  "source_hashes": {
+    "appearances.csv.gz": "e096c2b158fc3d52c4550526c4d4850dd62f31007652f4bcae112eadb1646802",
+    "competitions.csv.gz": "8924ddfbc0e9989f4a42a3c32ebb6faa671614625086d7fa84353f955352ea88",
+    "game_lineups.csv.gz": "5e83d6fad28364aadfea608013700cf09990062eede1ad9ef189189b0af47ba2",
+    "games.csv.gz": "142561989017d379bcf9e72bad0b87e0996bae0e7b710ebb3def9255f464c741",
+    "players.csv.gz": "d22e407981d5b51a79bf8ff59835729f3526f7dc3495a6d8ed2f852ed2e86403",
+    "transfers.csv.gz": "90326983daf7e6ac7aabdfe62b90936d9bf1dd2171e53dec75c3751eb1620a83"
+  },
+  "split": {
+    "players_in_both_train_and_test": 31,
+    "test": {
+      "cycles": [
+        2024,
+        2025
+      ],
+      "date_max": "2026-02-07",
+      "date_min": "2024-07-01",
+      "position_proxy_pct": 0.0,
+      "position_proxy_rows": 0,
+      "rows": 214,
+      "unique_players": 203
+    },
+    "test_players_with_repeat_transfers": 11,
+    "test_start": "2024-05-20",
+    "train": {
+      "cycles": [
+        2014,
+        2015,
+        2016,
+        2017,
+        2018,
+        2019,
+        2020,
+        2021,
+        2022,
+        2023
+      ],
+      "date_max": "2024-02-02",
+      "date_min": "2014-07-01",
+      "position_proxy_pct": 1.04,
+      "position_proxy_rows": 5,
+      "rows": 480,
+      "unique_players": 399
+    }
+  },
+  "status": "complete",
+  "target": "log1p(fee_eur)"
+}

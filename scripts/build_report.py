@@ -163,7 +163,8 @@ def render(docs: dict[str, bytes]) -> dict[str, str]:
     )
 
     rows = []
-    for fam, c in met["cv_finalists"].items():
+    for fam in ("linear", "ridge", "elastic_net"):
+        c = met["cv_finalists"][fam]
         params = ", ".join(f"{k}={v}" for k, v in c["params"].items()) or "none"
         rows.append(
             [
@@ -250,18 +251,22 @@ def render(docs: dict[str, bytes]) -> dict[str, str]:
     sel = [c for c in coefs if c["selected"] == "True"]
     rows = []
     for c in sel:
-        sd = f"{float(c['train_sd']):.3g}" if c.get("train_sd") else ""
+        sd = ""
+        if c.get("train_sd"):
+            x = float(c["train_sd"])
+            sd = f"{x:,.0f}" if x >= 100 else f"{x:.3g}"
+        is_icpt = c["kind"] == "intercept"
         rows.append(
             [
                 f"`{c['term']}`",
                 c["kind"],
                 f"{float(c['coef_log1p']):+.3f}",
-                f"×{float(c['multiplier_on_1p_fee']):.3f}",
+                "" if is_icpt else f"×{float(c['multiplier_on_1p_fee']):.3f}",
                 sd,
             ]
         )
     blocks["coefficients"] = table(
-        ["Term", "Kind", "Coefficient (log1p fee)", "exp(coef)", "Train SD (1 unit =)"],
+        ["Term", "Kind", "Coefficient (log1p fee)", "exp(coef)", "1 training SD ="],
         rows,
         "llrrr",
     )
@@ -313,10 +318,10 @@ def render(docs: dict[str, bytes]) -> dict[str, str]:
 
 def apply_blocks(text: str, blocks: dict[str, str]) -> str:
     for name, body in blocks.items():
-        pat = re.compile(rf"(<!-- BEGIN:{name} -->\n).*?(\n<!-- END:{name} -->)", re.S)
+        pat = re.compile(rf"(<!-- BEGIN:{name} -->\n)(?:.*?\n)?(<!-- END:{name} -->)", re.S)
         if not pat.search(text):
             raise ReportError(f"README has no block {name}")
-        text = pat.sub(lambda mt, b=body: mt.group(1) + b + mt.group(2), text)
+        text = pat.sub(lambda mt, b=body: mt.group(1) + b + "\n" + mt.group(2), text)
     return text
 
 

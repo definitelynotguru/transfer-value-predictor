@@ -1,0 +1,134 @@
+{
+  "by_cycle": {
+    "2014": 25,
+    "2015": 33,
+    "2016": 43,
+    "2017": 54,
+    "2018": 35,
+    "2019": 55,
+    "2020": 31,
+    "2021": 49,
+    "2022": 70,
+    "2023": 85,
+    "2024": 97,
+    "2025": 117
+  },
+  "config_hash": "feca52cf88bc9a765a35b90729d6049e8b503ef67ecf9395c7eddddea4ddc919",
+  "final_rows": 694,
+  "gates_passed": true,
+  "position_source_counts": {
+    "current_proxy": 5,
+    "historical_appearance": 689
+  },
+  "run_id": "751f64196525f1a9",
+  "source_hashes": {
+    "appearances.csv.gz": "e096c2b158fc3d52c4550526c4d4850dd62f31007652f4bcae112eadb1646802",
+    "competitions.csv.gz": "8924ddfbc0e9989f4a42a3c32ebb6faa671614625086d7fa84353f955352ea88",
+    "game_lineups.csv.gz": "5e83d6fad28364aadfea608013700cf09990062eede1ad9ef189189b0af47ba2",
+    "games.csv.gz": "142561989017d379bcf9e72bad0b87e0996bae0e7b710ebb3def9255f464c741",
+    "players.csv.gz": "d22e407981d5b51a79bf8ff59835729f3526f7dc3495a6d8ed2f852ed2e86403",
+    "transfers.csv.gz": "90326983daf7e6ac7aabdfe62b90936d9bf1dd2171e53dec75c3751eb1620a83"
+  },
+  "steps": [
+    {
+      "rows": 175165,
+      "step": "raw_transfer_rows_after_exact_dedup"
+    },
+    {
+      "dropped": 0,
+      "reason": "missing_player_id",
+      "rows": 175165,
+      "step": "valid_player_ids"
+    },
+    {
+      "dropped": 0,
+      "reason": "missing_transfer_date",
+      "rows": 175165,
+      "step": "valid_transfer_dates"
+    },
+    {
+      "dropped": 24946,
+      "reason": "outside_study_window",
+      "rows": 150219,
+      "step": "in_study_window"
+    },
+    {
+      "dropped": 49897,
+      "reason": "undisclosed_fee",
+      "rows": 100322,
+      "step": "fee_field_present"
+    },
+    {
+      "dropped": 0,
+      "reason": "malformed_fee",
+      "rows": 100322,
+      "step": "fee_well_formed"
+    },
+    {
+      "dropped": 84216,
+      "reason": "zero_fee_free_or_loan",
+      "rows": 16106,
+      "step": "positive_reported_fee"
+    },
+    {
+      "dropped": 0,
+      "note": "Implied by a positive fee under the source encoding (loans are recorded as 0).",
+      "rows": 16106,
+      "step": "classified_permanent"
+    },
+    {
+      "dropped": 0,
+      "note": "Implied by a positive fee under the source encoding (loans are recorded as 0).",
+      "rows": 16106,
+      "step": "classified_non_loan"
+    },
+    {
+      "dropped": 0,
+      "note": "Natural key unique; conflicts fail ingest.",
+      "rows": 16106,
+      "step": "unique_transfer_identity"
+    },
+    {
+      "dropped": 0,
+      "reason": "no_lookback_coverage",
+      "rows": 16106,
+      "step": "lookback_coverage_available"
+    },
+    {
+      "dropped": 15346,
+      "reason": "no_league_appearances_in_lookback",
+      "rows": 760,
+      "step": "league_active_candidates"
+    },
+    {
+      "dropped": 66,
+      "reason": "insufficient_lookback_minutes",
+      "rows": 694,
+      "step": "sufficient_lookback_minutes"
+    },
+    {
+      "dropped": 0,
+      "reason": "invalid_per90",
+      "rows": 694,
+      "step": "valid_per90_features"
+    },
+    {
+      "dropped": 0,
+      "reason": "missing_age",
+      "rows": 694,
+      "step": "usable_age"
+    },
+    {
+      "dropped": 0,
+      "reason": "missing_position",
+      "rows": 694,
+      "step": "usable_position"
+    },
+    {
+      "rows": 694,
+      "step": "final_supervised_rows"
+    }
+  ],
+  "test_rows": 214,
+  "train_rows": 480
+}

@@ -15,3 +15,4 @@ jobs:
       - run: uv run --locked ruff check .
       - run: uv run --locked pytest
       - run: uv run --locked tvp --help
+      - run: uv run --locked python scripts/build_report.py --check

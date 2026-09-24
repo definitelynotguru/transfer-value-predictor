@@ -1,0 +1,508 @@
+{
+  "candidates": [
+    {
+      "eligible": true,
+      "family": "linear",
+      "fit_issues": [],
+      "fold_log_mae": [
+        0.7567801018822503,
+        0.7818002490900825,
+        0.8904051659274327
+      ],
+      "mean_log_mae": 0.8096618389665885,
+      "name": "linear",
+      "order": 0,
+      "params": {},
+      "std_log_mae": 0.0580006642381777
+    },
+    {
+      "eligible": true,
+      "family": "ridge",
+      "fit_issues": [],
+      "fold_log_mae": [
+        0.756859281396402,
+        0.781678237959031,
+        0.8904478196791501
+      ],
+      "mean_log_mae": 0.8096617796781945,
+      "name": "ridge(alpha=0.1)",
+      "order": 1,
+      "params": {
+        "alpha": 0.1
+      },
+      "std_log_mae": 0.05801599403320565
+    },
+    {
+      "eligible": true,
+      "family": "ridge",
+      "fit_issues": [],
+      "fold_log_mae": [
+        0.7578997113904652,
+        0.7809001376702758,
+        0.8907980018729749
+      ],
+      "mean_log_mae": 0.8098659503112385,
+      "name": "ridge(alpha=1.0)",
+      "order": 2,
+      "params": {
+        "alpha": 1.0
+      },
+      "std_log_mae": 0.05799283076241351
+    },
+    {
+      "eligible": true,
+      "family": "ridge",
+      "fit_issues": [],
+      "fold_log_mae": [
+        0.7710745455244112,
+        0.7771091045743799,
+        0.8927376950161289
+      ],
+      "mean_log_mae": 0.8136404483716401,
+      "name": "ridge(alpha=10.0)",
+      "order": 3,
+      "params": {
+        "alpha": 10.0
+      },
+      "std_log_mae": 0.055984431144061354
+    },
+    {
+      "eligible": true,
+      "family": "ridge",
+      "fit_issues": [],
+      "fold_log_mae": [
+        0.8196285465033393,
+        0.7819328220006627,
+        0.921395004575358
+      ],
+      "mean_log_mae": 0.84098545769312,
+      "name": "ridge(alpha=100.0)",
+      "order": 4,
+      "params": {
+        "alpha": 100.0
+      },
+      "std_log_mae": 0.058903951954576254
+    },
+    {
+      "eligible": true,
+      "family": "elastic_net",
+      "fit_issues": [],
+      "fold_log_mae": [
+        0.794870844823697,
+        0.7728392781253207,
+        0.9042480347250238
+      ],
+      "mean_log_mae": 0.8239860525580137,
+      "name": "elastic_net(alpha=0.1, l1_ratio=0.15)",
+      "order": 5,
+      "params": {
+        "alpha": 0.1,
+        "l1_ratio": 0.15
+      },
+      "std_log_mae": 0.057462085000049214
+    },
+    {
+      "eligible": true,
+      "family": "elastic_net",
+      "fit_issues": [],
+      "fold_log_mae": [
+        0.8156981877326074,
+        0.7811017647673991,
+        0.9167961372537021
+      ],
+      "mean_log_mae": 0.8378653632512362,
+      "name": "elastic_net(alpha=0.1, l1_ratio=0.5)",
+      "order": 6,
+      "params": {
+        "alpha": 0.1,
+        "l1_ratio": 0.5
+      },
+      "std_log_mae": 0.057571859063076755
+    },
+    {
+      "eligible": true,
+      "family": "elastic_net",
+      "fit_issues": [],
+      "fold_log_mae": [
+        0.8391790421258332,
+        0.7957539849017523,
+        0.9311784120819709
+      ],
+      "mean_log_mae": 0.8553704797031855,
+      "name": "elastic_net(alpha=0.1, l1_ratio=0.85)",
+      "order": 7,
+      "params": {
+        "alpha": 0.1,
+        "l1_ratio": 0.85
+      },
+      "std_log_mae": 0.05645981377575002
+    },
+    {
+      "eligible": true,
+      "family": "elastic_net",
+      "fit_issues": [],
+      "fold_log_mae": [
+        0.940605456209278,
+        0.8749160860836026,
+        1.0237469276438143
+      ],
+      "mean_log_mae": 0.9464228233122317,
+      "name": "elastic_net(alpha=1.0, l1_ratio=0.15)",
+      "order": 8,
+      "params": {
+        "alpha": 1.0,
+        "l1_ratio": 0.15
+      },
+      "std_log_mae": 0.06089902117378736
+    },
+    {
+      "eligible": true,
+      "family": "elastic_net",
+      "fit_issues": [],
+      "fold_log_mae": [
+        1.0600247530764781,
+        0.9587748245402109,
+        1.1339982648947233
+      ],
+      "mean_log_mae": 1.0509326141704707,
+      "name": "elastic_net(alpha=1.0, l1_ratio=0.5)",
+      "order": 9,
+      "params": {
+        "alpha": 1.0,
+        "l1_ratio": 0.5
+      },
+      "std_log_mae": 0.07182299425129551
+    },
+    {
+      "eligible": true,
+      "family": "elastic_net",
+      "fit_issues": [],
+      "fold_log_mae": [
+        1.0600247530764781,
+        0.9587748245402109,
+        1.1339982648947233
+      ],
+      "mean_log_mae": 1.0509326141704707,
+      "name": "elastic_net(alpha=1.0, l1_ratio=0.85)",
+      "order": 10,
+      "params": {
+        "alpha": 1.0,
+        "l1_ratio": 0.85
+      },
+      "std_log_mae": 0.07182299425129551
+    },
+    {
+      "eligible": true,
+      "family": "elastic_net",
+      "fit_issues": [],
+      "fold_log_mae": [
+        1.0600247530764781,
+        0.9587748245402109,
+        1.1339982648947233
+      ],
+      "mean_log_mae": 1.0509326141704707,
+      "name": "elastic_net(alpha=10.0, l1_ratio=0.15)",
+      "order": 11,
+      "params": {
+        "alpha": 10.0,
+        "l1_ratio": 0.15
+      },
+      "std_log_mae": 0.07182299425129551
+    },
+    {
+      "eligible": true,
+      "family": "elastic_net",
+      "fit_issues": [],
+      "fold_log_mae": [
+        1.0600247530764781,
+        0.9587748245402109,
+        1.1339982648947233
+      ],
+      "mean_log_mae": 1.0509326141704707,
+      "name": "elastic_net(alpha=10.0, l1_ratio=0.5)",
+      "order": 12,
+      "params": {
+        "alpha": 10.0,
+        "l1_ratio": 0.5
+      },
+      "std_log_mae": 0.07182299425129551
+    },
+    {
+      "eligible": true,
+      "family": "elastic_net",
+      "fit_issues": [],
+      "fold_log_mae": [
+        1.0600247530764781,
+        0.9587748245402109,
+        1.1339982648947233
+      ],
+      "mean_log_mae": 1.0509326141704707,
+      "name": "elastic_net(alpha=10.0, l1_ratio=0.85)",
+      "order": 13,
+      "params": {
+        "alpha": 10.0,
+        "l1_ratio": 0.85
+      },
+      "std_log_mae": 0.07182299425129551
+    }
+  ],
+  "finalists": {
+    "elastic_net": "elastic_net(alpha=0.1, l1_ratio=0.15)",
+    "linear": "linear",
+    "ridge": "ridge(alpha=0.1)"
+  },
+  "folds": [
+    {
+      "index": 0,
+      "train_date_max": "2021-01-31",
+      "train_rows": 276,
+      "validation_cycle": 2021,
+      "validation_date_range": [
+        "2021-07-01",
+        "2022-02-09"
+      ],
+      "validation_rows": 49,
+      "validation_transfer_ids": [
+        "032075eccf2c3db7",
+        "156bcbbf4e78c172",
+        "35218605317c39b8",
+        "435f80428cef8868",
+        "75cef192b3aa9564",
+        "8c166ac3a9fcdec8",
+        "8f9ebaad8adb3d58",
+        "9df12989ef47170a",
+        "c9d8a28b77fd993c",
+        "feccc791ddd683c8",
+        "b5f9218e641f9b5b",
+        "a019d2a2bcfe3d71",
+        "3bb9ed1cc6eb28b9",
+        "7e471687699dbf24",
+        "4f26e546f793faa6",
+        "a17d1359fbfe7a03",
+        "b9f1b60c3df7577b",
+        "1abbddf95266e08b",
+        "97cbfa743a2a006b",
+        "4917a2aea9de0851",
+        "70a89f2851d897ba",
+        "6d7fea2ba45102f8",
+        "1d642b2ef1ea9edb",
+        "b331d4f4aa1e54aa",
+        "6bfadb3b8bec8e94",
+        "3dfddcea86f5942f",
+        "7efe371b1fd9fb61",
+        "1969e9b29d08e111",
+        "b8785094700160af",
+        "f1ab94c607f5deb0",
+        "2e2763060eac7ed9",
+        "50dbd95b4d687678",
+        "f9d9e325f288b910",
+        "fb85208abdf6a32b",
+        "5d333ec988885d68",
+        "fbdc72aa70957bd1",
+        "5c9c48050a998f7b",
+        "6e0417c83e35d220",
+        "bcbe0a20b8460231",
+        "55323d5ad3b719f5",
+        "c9f019d08f070cd4",
+        "78d8271c5c36a49b",
+        "64fac7b49eadd38b",
+        "9cfd21341a791932",
+        "e2d4d8c4d811ea39",
+        "3eb539c59c29ccc3",
+        "9e08a27e80519303",
+        "c1d8c31106d81238",
+        "afeec7da2f8ddac4"
+      ]
+    },
+    {
+      "index": 1,
+      "train_date_max": "2022-02-09",
+      "train_rows": 325,
+      "validation_cycle": 2022,
+      "validation_date_range": [
+        "2022-07-01",
+        "2023-01-31"
+      ],
+      "validation_rows": 70,
+      "validation_transfer_ids": [
+        "0ee5da83467eed3c",
+        "104ecb504099c7c9",
+        "2bd49543b729d45b",
+        "2c6355d541f4e47a",
+        "3149a9d932f44bd8",
+        "35e781afce9d3359",
+        "4cc6be20f23e473c",
+        "4f3d184ea43edfd9",
+        "6285c166ddae3c8c",
+        "68ea1c514669adfa",
+        "8a8e06eb8701c58e",
+        "b6ebdcd62c3c0ce8",
+        "be2aafbb6f129446",
+        "c06804feeae2a3bb",
+        "e99fbfb446a489f4",
+        "f20a12366be233bc",
+        "f2f6a5f32a5e8f46",
+        "f69aa325c091df2f",
+        "09b180f80d8a91eb",
+        "a4e8c27dd62a79d3",
+        "fee9641de3d6cdb3",
+        "7aa94b0fd443f18a",
+        "6f05d3881ff5d2e8",
+        "8612d0bb2409ad57",
+        "2047d27b7d47bfd0",
+        "987c12d2f9013df0",
+        "8b7b3c738e3dfc05",
+        "c6e8a28cf1a12024",
+        "70d182026d23b9e1",
+        "6530354a06d90806",
+        "30d8d7d75ac6e90b",
+        "3a962884e9fb84e0",
+        "5ae900af1cf866d6",
+        "711c253c328fd376",
+        "bda40e12fe89128a",
+        "4579124adb147ce0",
+        "acec699b15afaf61",
+        "e0a6d9b0642a4237",
+        "eabce8dbe842f16d",
+        "51e5a1eccd2f2791",
+        "72613b12831e9473",
+        "726324a3c98846e2",
+        "a278414c6cc24aec",
+        "5f628bb395cf7d9b",
+        "1dd783785c3d2470",
+        "26b470e8556ed92c",
+        "961c8fe09e9d52dc",
+        "2cec25206b80e3a7",
+        "c0f352ca16f73c8f",
+        "5e2a17833d8681b8",
+        "0083af49c6fdbab9",
+        "24b0fee291b61189",
+        "f67262befd17b87f",
+        "0da5f533f9f5f0c7",
+        "3514e477d7d4dc87",
+        "4aaf9a5fdd889cdc",
+        "5f7956ade4c3e70d",
+        "78c56898e9079161",
+        "bf1fb300ad605075",
+        "84137c175ccb59b3",
+        "1e847c562217b7e0",
+        "7f34e3242b0af5cb",
+        "aaa8d53e65d11b9e",
+        "d3c37f9ee7b91195",
+        "91702b8a62d64e64",
+        "37851f2f427a2736",
+        "053349e5db4c8051",
+        "245f2b97e113035b",
+        "28cf607abb3f847d",
+        "8b62751cb749d218"
+      ]
+    },
+    {
+      "index": 2,
+      "train_date_max": "2023-01-31",
+      "train_rows": 395,
+      "validation_cycle": 2023,
+      "validation_date_range": [
+        "2023-07-01",
+        "2024-02-02"
+      ],
+      "validation_rows": 85,
+      "validation_transfer_ids": [
+        "0ffdf0bebe41dd95",
+        "15b097086cd400d6",
+        "27c6c415a37f7699",
+        "30101d7d419a26e2",
+        "41162d92dba7e45a",
+        "43fa9089ed745ade",
+        "545e714d4178f366",
+        "6053314e7e2baefb",
+        "62fc9bfca09ce174",
+        "635f1ff382992d1c",
+        "69abf764302f58aa",
+        "84333033fbce0b43",
+        "97b3a0b82a48470e",
+        "9b31266e720e2602",
+        "9bd0a6aa854aecff",
+        "ab39403675b15b22",
+        "abc944bba5fc6578",
+        "ca64865019c52314",
+        "d2d3040e710363ad",
+        "d761f888ebbcca40",
+        "e109ba025f9aecc9",
+        "2cf9beea0237190b",
+        "8f665f90dd4a94fb",
+        "a0c38d9f27e67f51",
+        "85a26215c6191051",
+        "115e106e96d5f4b7",
+        "8f0bfca2789915ac",
+        "c1c9169d95472ae3",
+        "11e691d4637dce49",
+        "b8208986e2493340",
+        "1858ad40b7dffbb2",
+        "970ec6e96f4153cd",
+        "18e125dd1c01867c",
+        "352af9a13ecce1dd",
+        "ccd194e84a446942",
+        "2eb097b2c399a216",
+        "7e6a9a57844ecd30",
+        "7f53768754c407f1",
+        "99478e8a80c729d7",
+        "0e4aae71ae4dacc6",
+        "6d2e21a4488bc1ca",
+        "4f360f62cfc6e9a2",
+        "1f7ab7004a7ea0ea",
+        "a48cbf9b7edf52d1",
+        "476c46ffdaf2f874",
+        "ed69ccce736af88e",
+        "52c72a7d0e9a0bd7",
+        "93dea651db8f4400",
+        "2456bb2fb5dec36e",
+        "37587d06f2c6f23a",
+        "83a5d7380151a48e",
+        "b12b92650999763a",
+        "0aef8b90822db9df",
+        "e2cc033d5b6304d8",
+        "37f62f6001e4e5cb",
+        "3cf48e587ba7cba3",
+        "7ab6225f37bf6974",
+        "fbed1acc4f0a96aa",
+        "508888b045180d56",
+        "f85c00a5c104fca5",
+        "67d198f1baf2aebc",
+        "77f7a425babb6197",
+        "d615a1f842b6ccb7",
+        "e04ad8e5501af2f4",
+        "0a78ebab92484817",
+        "888327b0a1160410",
+        "789f501733ae3e9c",
+        "550cbb780027f4e0",
+        "9fce24c151ac5ac0",
+        "b163c6eee329a2f7",
+        "b645c588272498a8",
+        "bda650c592e9d577",
+        "c818a1b6f3acca1b",
+        "dfc17ad8b5386d17",
+        "ebf0a5d6d41bc6d8",
+        "98195620835e030b",
+        "1fe332c9887b126b",
+        "0525bd730d210b7b",
+        "5f62841d16f659c3",
+        "4600b652e4667675",
+        "d04bad518713e9c6",
+        "6becd907f834f1c2",
+        "cc5665f025aa80e3",
+        "ef2e49a4a6cef9f6",
+        "afbff98f93207241"
+      ]
+    }
+  ],
+  "objective": "mean fold MAE on log1p(fee_eur); equal fold weights",
+  "run_id": "751f64196525f1a9",
+  "selected": "linear",
+  "selected_family": "linear",
+  "tie_break": [
+    "mean_log_mae rounded to 4 dp",
+    "std_log_mae rounded to 4 dp",
+    "grid order"
+  ]
+}

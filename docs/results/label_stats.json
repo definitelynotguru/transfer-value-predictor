@@ -1,0 +1,36 @@
+{
+  "all_rows": {
+    "by_reason": {
+      "labeled": 16106,
+      "outside_study_window": 24946,
+      "undisclosed_fee": 49897,
+      "zero_fee_free_or_loan": 84216
+    },
+    "total": 175165
+  },
+  "notes": [
+    "Free transfers, loans (paid or not) and loan returns share fee 0 in the source; they are excluded together and cannot be counted separately.",
+    "Null fees are undisclosed or unknown and are excluded, never zero-filled."
+  ],
+  "round_trip_diagnostic": {
+    "final_cohort_flagged": 4,
+    "final_cohort_flagged_test": 1,
+    "final_cohort_flagged_transfer_ids": [
+      "11e691d4637dce49",
+      "1d123e93f0a0c392",
+      "25f65e15d84708cc",
+      "2cec25206b80e3a7"
+    ],
+    "labels_flagged": 371,
+    "labels_total": 16106,
+    "window_days": 400
+  },
+  "run_id": "751f64196525f1a9",
+  "study_window": {
+    "malformed_fee": 0,
+    "paid_positive_fee": 16106,
+    "total": 150219,
+    "undisclosed_null_fee": 49897,
+    "zero_fee_free_or_loan_or_loan_end": 84216
+  }
+}

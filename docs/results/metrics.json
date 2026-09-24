@@ -1,0 +1,301 @@
+{
+  "baselines": {
+    "position_fallback_rows": 0,
+    "train_mean_eur": 18147125.0,
+    "train_median_by_position_eur": {
+      "DF": 9500000.0,
+      "FW": 13700000.0,
+      "GK": 5725000.0,
+      "MF": 12750000.0
+    },
+    "train_median_eur": 12000000.0
+  },
+  "bootstrap": {
+    "comparisons": {
+      "train_mean": {
+        "ci_high": -2784793.0206577713,
+        "ci_low": -5761125.110245572,
+        "observed_delta_mae_eur": -4269623.676586075,
+        "verdict": "model MAE lower; interval excludes zero"
+      },
+      "train_median": {
+        "ci_high": -2746029.642226975,
+        "ci_low": -5516039.86733047,
+        "observed_delta_mae_eur": -4054246.340137478,
+        "verdict": "model MAE lower; interval excludes zero"
+      },
+      "train_median_by_position": {
+        "ci_high": -2744753.997855124,
+        "ci_low": -5400625.489874995,
+        "observed_delta_mae_eur": -4016465.966305701,
+        "verdict": "model MAE lower; interval excludes zero"
+      }
+    },
+    "confidence": 0.95,
+    "delta_definition": "MAE(reference model) - MAE(comparison); negative favors the model",
+    "reference": "linear",
+    "replicates": 5000,
+    "resampling_unit": "player",
+    "seed": 42,
+    "unique_test_players": 203
+  },
+  "cv_finalists": {
+    "elastic_net": {
+      "eligible": true,
+      "family": "elastic_net",
+      "fit_issues": [],
+      "fold_log_mae": [
+        0.794870844823697,
+        0.7728392781253207,
+        0.9042480347250238
+      ],
+      "mean_log_mae": 0.8239860525580137,
+      "name": "elastic_net(alpha=0.1, l1_ratio=0.15)",
+      "order": 5,
+      "params": {
+        "alpha": 0.1,
+        "l1_ratio": 0.15
+      },
+      "std_log_mae": 0.057462085000049214
+    },
+    "linear": {
+      "eligible": true,
+      "family": "linear",
+      "fit_issues": [],
+      "fold_log_mae": [
+        0.7567801018822503,
+        0.7818002490900825,
+        0.8904051659274327
+      ],
+      "mean_log_mae": 0.8096618389665885,
+      "name": "linear",
+      "order": 0,
+      "params": {},
+      "std_log_mae": 0.0580006642381777
+    },
+    "ridge": {
+      "eligible": true,
+      "family": "ridge",
+      "fit_issues": [],
+      "fold_log_mae": [
+        0.756859281396402,
+        0.781678237959031,
+        0.8904478196791501
+      ],
+      "mean_log_mae": 0.8096617796781945,
+      "name": "ridge(alpha=0.1)",
+      "order": 1,
+      "params": {
+        "alpha": 0.1
+      },
+      "std_log_mae": 0.05801599403320565
+    }
+  },
+  "headline_metric": "test MAE in EUR after expm1 (selection used CV log-MAE)",
+  "methods": {
+    "elastic_net": {
+      "clamped_at_zero": 0,
+      "label": "ElasticNet",
+      "log_mae": 0.7225612198001439,
+      "mae_eur": 11585170.90282943,
+      "median_ae_eur": 6776201.395263581,
+      "params": {
+        "alpha": 0.1,
+        "l1_ratio": 0.15
+      },
+      "r2_eur": 0.33827421670443925,
+      "rmse_eur": 16998701.370041255,
+      "rows": 214,
+      "selected_by_cv": false
+    },
+    "linear": {
+      "clamped_at_zero": 0,
+      "label": "LinearRegression",
+      "log_mae": 0.7186969123187873,
+      "mae_eur": 11197856.46360084,
+      "median_ae_eur": 6538859.308132878,
+      "params": {},
+      "r2_eur": 0.3813216831898718,
+      "rmse_eur": 16436493.172024427,
+      "rows": 214,
+      "selected_by_cv": true
+    },
+    "ridge": {
+      "clamped_at_zero": 0,
+      "label": "Ridge",
+      "log_mae": 0.7185053910631218,
+      "mae_eur": 11196469.50411122,
+      "median_ae_eur": 6530621.552052164,
+      "params": {
+        "alpha": 0.1
+      },
+      "r2_eur": 0.3815317842918565,
+      "rmse_eur": 16433702.04578918,
+      "rows": 214,
+      "selected_by_cv": false
+    },
+    "train_mean": {
+      "clamped_at_zero": 0,
+      "label": "Train mean fee",
+      "log_mae": 0.9403158556915532,
+      "mae_eur": 15467480.140186915,
+      "median_ae_eur": 12247125.0,
+      "r2_eur": -0.029792160531303846,
+      "rmse_eur": 21205645.976751707,
+      "rows": 214,
+      "selected_by_cv": false
+    },
+    "train_median": {
+      "clamped_at_zero": 0,
+      "label": "Train median fee",
+      "log_mae": 0.9288283076399837,
+      "mae_eur": 15252102.803738318,
+      "median_ae_eur": 9200000.0,
+      "r2_eur": -0.21787609047568357,
+      "rmse_eur": 23061007.031938195,
+      "rows": 214,
+      "selected_by_cv": false
+    },
+    "train_median_by_position": {
+      "clamped_at_zero": 0,
+      "label": "Train median fee by position",
+      "log_mae": 0.9345647035523836,
+      "mae_eur": 15214322.429906541,
+      "median_ae_eur": 8800000.0,
+      "r2_eur": -0.1898918156015308,
+      "rmse_eur": 22794520.172251433,
+      "rows": 214,
+      "selected_by_cv": false
+    }
+  },
+  "position_proxy_pct_total": 0.72,
+  "question": "How well do recent PL performance, age and position explain PL-active players' reported transfer fees on a later time holdout?",
+  "residual_diagnostics": {
+    "median_fee_by_cycle_eur": {
+      "2014": 6000000.0,
+      "2015": 8000000.0,
+      "2016": 11000000.0,
+      "2017": 11000000.0,
+      "2018": 10000000.0,
+      "2019": 16500000.0,
+      "2020": 16200000.0,
+      "2021": 11100000.0,
+      "2022": 12000000.0,
+      "2023": 18500000.0,
+      "2024": 12000000.0,
+      "2025": 15000000.0
+    },
+    "note": "Descriptive only; computed after selection and never fed back into the model.",
+    "test_by_position": {
+      "DF": {
+        "mae_eur": 8097665.242308184,
+        "median_residual_eur": 1866232.9511422534,
+        "rows": 57
+      },
+      "FW": {
+        "mae_eur": 13954895.657632373,
+        "median_residual_eur": 7251160.945868763,
+        "rows": 85
+      },
+      "GK": {
+        "mae_eur": 8971681.633186145,
+        "median_residual_eur": 7883969.972556111,
+        "rows": 15
+      },
+      "MF": {
+        "mae_eur": 10772508.929867897,
+        "median_residual_eur": 3621572.6180714164,
+        "rows": 57
+      }
+    },
+    "test_mean_log_residual": 0.2886325771630577,
+    "test_mean_log_residual_by_cycle": {
+      "2024": 0.29067721753541886,
+      "2025": 0.28693744796545906
+    },
+    "test_mean_residual_eur": 9082742.523930391,
+    "test_median_residual_eur": 4579114.990419658,
+    "test_share_underpredicted": 0.7009345794392523,
+    "train_in_sample_mean_log_residual_by_cycle": {
+      "2014": -0.7411262888214167,
+      "2015": -0.3427165786880513,
+      "2016": -0.20516083424791604,
+      "2017": -0.07241295210177354,
+      "2018": 0.0916195143040134,
+      "2019": 0.21337957313547753,
+      "2020": 0.07443758960630677,
+      "2021": -0.06950414836668925,
+      "2022": 0.06578801270023504,
+      "2023": 0.28376984921718257
+    }
+  },
+  "retransformation": "prediction_eur = max(expm1(prediction_log), 0); no smearing correction, so this is not an expected-fee estimator",
+  "run_id": "751f64196525f1a9",
+  "selected_model": {
+    "family": "linear",
+    "name": "linear",
+    "params": {},
+    "selection": "mean fold MAE on log1p(fee_eur); equal fold weights"
+  },
+  "split": {
+    "players_in_both_train_and_test": 31,
+    "test": {
+      "cycles": [
+        2024,
+        2025
+      ],
+      "date_max": "2026-02-07",
+      "date_min": "2024-07-01",
+      "position_proxy_pct": 0.0,
+      "position_proxy_rows": 0,
+      "rows": 214,
+      "unique_players": 203
+    },
+    "test_players_with_repeat_transfers": 11,
+    "test_start": "2024-05-20",
+    "train": {
+      "cycles": [
+        2014,
+        2015,
+        2016,
+        2017,
+        2018,
+        2019,
+        2020,
+        2021,
+        2022,
+        2023
+      ],
+      "date_max": "2024-02-02",
+      "date_min": "2014-07-01",
+      "position_proxy_pct": 1.04,
+      "position_proxy_rows": 5,
+      "rows": 480,
+      "unique_players": 399
+    }
+  },
+  "study_window": {
+    "rationale": "Cycle s runs from the day after season s-1's last match to the day after season s's last match. T is the start of the earlier of the last two study cycles.",
+    "study_seasons": [
+      2014,
+      2015,
+      2016,
+      2017,
+      2018,
+      2019,
+      2020,
+      2021,
+      2022,
+      2023,
+      2024,
+      2025
+    ],
+    "test_seasons": [
+      2024,
+      2025
+    ],
+    "test_start": "2024-05-20",
+    "transfer_end_exclusive": "2026-05-25",
+    "transfer_start": "2014-05-12"
+  }
+}
