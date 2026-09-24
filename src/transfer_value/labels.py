@@ -90,5 +90,10 @@ def round_trip_diagnostic(all_transfers: pd.DataFrame, labeled: pd.DataFrame) ->
         suffixes=("", "_back"),
     )
     gap = (m["transfer_date_back"] - m["transfer_date"]).dt.days
-    flagged = m.loc[(gap > 0) & (gap <= 400), "transfer_id"].unique()
-    return {"labels_flagged": len(flagged), "labels_total": len(labeled), "window_days": 400}
+    flagged = sorted(m.loc[(gap > 0) & (gap <= 400), "transfer_id"].unique())
+    return {
+        "labels_flagged": len(flagged),
+        "labels_total": len(labeled),
+        "window_days": 400,
+        "flagged_transfer_ids": flagged,
+    }

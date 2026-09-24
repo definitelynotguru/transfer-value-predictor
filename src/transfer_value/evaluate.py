@@ -256,6 +256,35 @@ def run_evaluate(cfg) -> dict:
     plots.residual_distribution(out, model_label, figs / "residual_distribution.png")
 
     total_proxy = float(feats["position_is_proxy"].mean())
+    sel = bundles[selected]
+    in_sample = train["fee_log1p"] - sel["pipeline"].predict(
+        train[sel["numeric_features"] + sel["categorical_features"]]
+    )
+    log_res = np.log1p(out["fee_eur"]) - out["prediction_log"]
+    diagnostics = {
+        "note": "Descriptive only; computed after selection and never fed back into the model.",
+        "test_share_underpredicted": float((out["residual_eur"] > 0).mean()),
+        "test_mean_residual_eur": float(out["residual_eur"].mean()),
+        "test_median_residual_eur": float(out["residual_eur"].median()),
+        "test_mean_log_residual": float(log_res.mean()),
+        "test_by_position": {
+            pos: {
+                "rows": len(g),
+                "mae_eur": float(g["abs_error_eur"].mean()),
+                "median_residual_eur": float(g["residual_eur"].median()),
+            }
+            for pos, g in out.groupby("position")
+        },
+        "test_mean_log_residual_by_cycle": {
+            str(c): float(v) for c, v in log_res.groupby(out["transfer_cycle"]).mean().items()
+        },
+        "train_in_sample_mean_log_residual_by_cycle": {
+            str(c): float(v) for c, v in in_sample.groupby(train["transfer_cycle"]).mean().items()
+        },
+        "median_fee_by_cycle_eur": {
+            str(c): float(v) for c, v in feats.groupby("transfer_cycle")["fee_eur"].median().items()
+        },
+    }
     result = {
         "run_id": fmeta["run_id"],
         "question": "How well do recent PL performance, age and position explain PL-active "
@@ -277,6 +306,7 @@ def run_evaluate(cfg) -> dict:
         "methods": methods,
         "baselines": base_info,
         "bootstrap": boot,
+        "residual_diagnostics": diagnostics,
         "retransformation": "prediction_eur = max(expm1(prediction_log), 0); no smearing "
         "correction, so this is not an expected-fee estimator",
     }

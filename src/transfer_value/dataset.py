@@ -114,6 +114,12 @@ def assemble(tables: dict[str, pd.DataFrame], cfg: Config) -> dict:
     )
 
     funnel = build_funnel(transfers, candidates, features, start, end)
+    rt = label_stats["round_trip_diagnostic"]
+    flagged = set(rt.pop("flagged_transfer_ids"))
+    in_cohort = features["transfer_id"].isin(flagged)
+    rt["final_cohort_flagged"] = int(in_cohort.sum())
+    rt["final_cohort_flagged_test"] = int((in_cohort & (features["partition"] == "test")).sum())
+    rt["final_cohort_flagged_transfer_ids"] = sorted(features.loc[in_cohort, "transfer_id"])
     return {
         "features": features,
         "candidates": candidates,
