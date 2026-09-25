@@ -17,3 +17,6 @@ data/processed/*
 
 artifacts/*
 !artifacts/.gitkeep
+
+# personal coding-agent rules (local only)
+AGENTS.md
