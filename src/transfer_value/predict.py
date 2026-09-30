@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import datetime as dt
+import json
 import unicodedata
 
 import joblib
 import pandas as pd
 
+from transfer_value.conformal import interval_eur
 from transfer_value.dataset import load_interim
 from transfer_value.evaluate import retransform
 from transfer_value.features import build_features
@@ -41,6 +43,21 @@ def resolve_player(players: pd.DataFrame, name: str | None, player_id: str | Non
         )
         raise PredictError(f"ambiguous name {name!r}; use --player-id with one of: {ids}")
     return exact.iloc[0]
+
+
+def headline_interval(cfg, bundle: dict) -> tuple[dict | None, str]:
+    """The follow-up's conformal width for the saved headline model, if it matches this run."""
+    path = cfg.artifact_dir / "followup" / "headline_interval.json"
+    if not path.exists():
+        return None, "run tvp followup to calibrate it"
+    iv = json.loads(path.read_text())
+    if (
+        iv["headline_run_id"] != bundle["run_id"]
+        or iv["features_fingerprint"] != bundle["features_fingerprint"]
+        or iv["model"] != bundle["name"]
+    ):
+        return None, "calibrated for a different headline run; rerun tvp followup"
+    return iv, "ok"
 
 
 def run_predict(cfg, player: str | None, player_id: str | None, date: str | None) -> dict:
@@ -90,6 +107,16 @@ def run_predict(cfg, player: str | None, player_id: str | None, date: str | None
     cols = bundle["numeric_features"] + bundle["categorical_features"]
     log_pred = bundle["pipeline"].predict(feats[cols])
     eur, _ = retransform(log_pred)
+    interval, status = headline_interval(cfg, bundle)
+    if interval is not None:
+        lo, hi = interval_eur(log_pred, interval["q_log"])
+        interval_fields = {
+            "interval_level": interval["level"],
+            "interval_lower_eur": float(lo[0]),
+            "interval_upper_eur": float(hi[0]),
+        }
+    else:
+        interval_fields = {"interval_level": None, "interval_status": status}
     return {
         "player": p["name"],
         "player_id": p["player_id"],
@@ -102,7 +129,10 @@ def run_predict(cfg, player: str | None, player_id: str | None, date: str | None
         "assists": int(row["assists"]),
         "age": int(row["age"]),
         "predicted_reported_fee_eur": float(eur[0]),
+        **interval_fields,
         "model": bundle["name"],
         "run_id": bundle["run_id"],
-        "note": "Hypothetical estimate of a reported fee, not an observed fee or a valuation.",
+        "note": "Hypothetical estimate of a reported fee, not an observed fee or a valuation. "
+        "The interval covers past transfers at its nominal rate on average; it is not a "
+        "valuation range for this player.",
     }

@@ -418,10 +418,12 @@ def render_followup(f: dict) -> dict[str, str]:
     )
 
     mv = f["market_value_comparator"]
+    ctx = f["context_round"]
     labels = {
         "train_median": "Train median fee",
         "headline": "Headline model (LinearRegression)",
         "followup": f"Follow-up model ({f['selected_variant']})",
+        "enriched": f"Enriched follow-up ({ctx['selected_variant']})",
         "market_value": "Transfermarkt market value (comparator)",
     }
     rows = [
@@ -431,7 +433,7 @@ def render_followup(f: dict) -> dict[str, str]:
             m(mv["methods"][k]["median_ae_eur"]),
             f"{mv['methods'][k]['log_mae']:.3f}",
         ]
-        for k in ("train_median", "headline", "followup", "market_value")
+        for k in ("train_median", "headline", "followup", "enriched", "market_value")
     ]
     boots = "; ".join(
         f"{labels[ref].split(' (')[0].lower()} minus market value "
@@ -446,7 +448,189 @@ def render_followup(f: dict) -> dict[str, str]:
         f"Reported fee above market value in {mv['share_fee_above_market_value']:.0%} of rows. "
         f"Paired bootstrap: {boots}."
     )
+    blocks.update(render_context(ctx, f["variants"][f["selected_variant"]]))
+    blocks.update(render_conformal(f["conformal"], f["selected_variant"], ctx["selected_variant"]))
+    blocks["boosting"] = render_boosting(f["boosting"], f["variants"]["headline"])
     return blocks
+
+
+def _pct(x: float) -> str:
+    return f"{x:.0%}"
+
+
+def render_context(c: dict, first_round: dict) -> dict[str, str]:
+    rows = []
+    for name in c["variant_order"]:
+        v = c["variants"][name]
+        sel = v["selected_by_cv"]
+        rows.append(
+            [
+                f"**{name}**" if sel else name,
+                v["model"],
+                f"{v['cv_mean_log_mae']:.4f}",
+                " / ".join(f"{x:.3f}" for x in v["cv_fold_log_mae"]),
+                "yes" if sel else "",
+                m(v["test"]["mae_eur"]),
+                f"{v['test']['log_mae']:.3f}",
+                f"{v['test_mean_log_residual']:+.3f}",
+            ]
+        )
+    b = c["vs_headline_and_followup"]["comparisons"]
+    abl = "; ".join(
+        f"without {g.replace('_', ' ')} {a['cv_mean_log_mae']:.4f}"
+        for g, a in c["ablation_cv"].items()
+    )
+    coef = {r["term"]: r for r in c["selected_coefficients"]}
+    coefs = ", ".join(
+        f"`{t}` {coef[t]['coef_log1p']:+.3f}"
+        for t in ("team_points_per_game", "europe_minutes", "other_league_minutes")
+        if t in coef
+    )
+    miss_rows = [
+        [
+            r["name"],
+            m(r["fee_eur"], 1),
+            m(r["headline_eur"], 1),
+            m(r["followup_eur"], 1),
+            m(r["enriched_eur"], 1),
+            f"{r['europe_minutes']:,.0f}",
+            f"{r['other_league_minutes']:,.0f} ({r['other_league_goals']:.0f} G)",
+            f"{r['team_points_per_game']:.2f}",
+        ]
+        for r in c["headline_worst_misses"]
+    ]
+    sel = c["selected_variant"]
+    text = (
+        table(
+            [
+                "Variant",
+                "Best model",
+                "CV log-MAE",
+                "Per fold",
+                "Selected by CV",
+                "Test MAE",
+                "Test log-MAE",
+                "Mean test log residual",
+            ],
+            rows,
+            "llrllrrr",
+        )
+        + f"\n\nSelected by CV: **{sel}** ({c['selected_model']}), CV log-MAE "
+        f"{c['variants'][sel]['cv_mean_log_mae']:.4f} against "
+        f"{first_round['cv_mean_log_mae']:.4f} for the first-round follow-up. Coefficients per "
+        f"training SD: {coefs}. CV with one context group removed from the selected variant: "
+        f"{abl}. Paired bootstrap on test MAE, enriched minus headline "
+        f"{m(b['headline']['observed_delta_mae_eur'])} (95% CI {_ci(b['headline'])}); enriched "
+        f"minus first-round follow-up {m(b['followup']['observed_delta_mae_eur'])} (95% CI "
+        f"{_ci(b['followup'])}). Rows with any European minutes: train "
+        f"{_pct(c['share_with_europe_minutes']['train'])}, test "
+        f"{_pct(c['share_with_europe_minutes']['test'])}; with other-league minutes: train "
+        f"{_pct(c['share_with_other_league_minutes']['train'])}, test "
+        f"{_pct(c['share_with_other_league_minutes']['test'])}.\n\n"
+        "The headline's five worst misses under each model:\n\n"
+        + table(
+            [
+                "Player",
+                "Reported",
+                "Headline",
+                "Follow-up",
+                "Enriched",
+                "European min",
+                "Other-league min",
+                "Team pts/game",
+            ],
+            miss_rows,
+            "lrrrrrrr",
+        )
+    )
+    return {"context": text}
+
+
+def render_conformal(c: dict, followup_name: str, enriched_name: str) -> dict[str, str]:
+    labels = {
+        "headline": "**Headline (LinearRegression)**",
+        "followup": f"Follow-up ({followup_name})",
+        "enriched": f"Enriched follow-up ({enriched_name})",
+    }
+    rows = []
+    for key in ("headline", "followup", "enriched"):
+        for lv, s in c[key]["levels"].items():
+            t = s["test"]
+            rows.append(
+                [
+                    labels[key],
+                    _pct(float(lv)),
+                    s["calibration_rows"],
+                    f"×/÷ {s['factor']:.2f}",
+                    _pct(t["coverage"]),
+                    _pct(t["share_above_upper"]),
+                    _pct(t["share_below_lower"]),
+                    f"{m(s['median_lower_eur'], 1)} to {m(s['median_upper_eur'], 1)}",
+                ]
+            )
+    lv = f"{c['predict_level']:.2f}"
+    h = c["headline"]["levels"][lv]
+
+    def groups(d: dict) -> str:
+        return ", ".join(f"{k} {_pct(v['coverage'])}" for k, v in d.items())
+
+    misses = "; ".join(
+        f"{r['name']} {m(r['fee_eur'], 0)} in {m(r['lower_eur'], 1)} to {m(r['upper_eur'], 0)} "
+        f"({'covered' if r['covered'] else 'missed'})"
+        for r in c["headline_worst_misses"]
+    )
+    text = (
+        table(
+            [
+                "Model",
+                "Nominal",
+                "Calibration rows",
+                "Interval (on 1 + fee)",
+                "Test coverage",
+                "Above upper",
+                "Below lower",
+                "Median test interval",
+            ],
+            rows,
+            "lrrrrrrl",
+        )
+        + f"\n\nHeadline at {_pct(c['predict_level'])}, test coverage by cycle: "
+        f"{groups(h['test_by_transfer_cycle'])}; by position: {groups(h['test_by_position'])}; "
+        f"by window: {groups(h['test_by_window'])}. Mean calibration residual (log scale): "
+        + ", ".join(
+            f"{k} {c[k]['calibration_mean_residual']:+.3f}"
+            for k in ("headline", "followup", "enriched")
+        )
+        + f". Headline worst five at {_pct(c['predict_level'])}: {misses}."
+    )
+    return {"conformal": text}
+
+
+def render_boosting(b: dict, head: dict) -> str:
+    g, gm, hc = b["gbm"], b["gbm_monotone"], b["headline_compression"]
+
+    def reach(x: dict) -> str:
+        return (
+            f"{m(x['prediction_for_largest_fee_eur'], 1)} for the "
+            f"{m(x['largest_fee_eur'], 0)} transfer, top-decile log residual "
+            f"{x['top_decile_mean_log_residual']:+.2f}, slope {x['calibration_slope']:.2f}"
+        )
+
+    return (
+        "**Gradient boosting did not fix the compression.** Same headline inputs, same folds, "
+        f"a fixed {len(b['grid'])}-point grid (`HistGradientBoostingRegressor`, learning rate "
+        f"{b['learning_rate']}). CV log-MAE: unconstrained {g['cv_mean_log_mae']:.4f}, "
+        f"monotonic {gm['cv_mean_log_mae']:.4f} (more goals, assists, minutes and per-90 output "
+        f"can only raise the prediction, more age can only lower it), against "
+        f"{head['cv_mean_log_mae']:.4f} for the headline linear model, so CV would never have "
+        f"picked either. On the test set (descriptive only): test MAE {m(g['test']['mae_eur'])} "
+        f"and {m(gm['test']['mae_eur'])} against {m(head['test']['mae_eur'])}. The top of the "
+        f"market gets no closer: linear {reach(hc)}; boosting {reach(g['compression'])}; "
+        f"monotonic {reach(gm['compression'])}. Trees cannot predict above the leaf averages "
+        "they were trained on, and a slope of actual on predicted log fee near 1 says the "
+        "linear predictions are not too tightly bunched for their inputs. The elite misses are "
+        "a missing-information problem, not a functional-form one."
+    )
 
 
 def apply_blocks(text: str, blocks: dict[str, str]) -> str:

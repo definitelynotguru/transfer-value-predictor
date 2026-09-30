@@ -27,3 +27,13 @@ price_level:
 market_value:
   file: player_valuations.csv.gz
   max_staleness_days: 365
+
+# Second round (after the first follow-up was scored). Context inputs come from the headline
+# run's own raw appearances/games/competitions files, verified against its source hashes.
+context:
+  europe_competitions: [CL, EL, UCOL]
+
+# Split-conformal intervals calibrated on the training-window CV residuals.
+conformal:
+  levels: [0.8, 0.9]
+  predict_level: 0.8

@@ -1,10 +1,1137 @@
 {
+  "boosting": {
+    "gbm": {
+      "compression": {
+        "calibration_slope": 1.036955673719225,
+        "largest_fee_eur": 145000000.0,
+        "max_prediction_eur": 61253292.98359388,
+        "prediction_for_largest_fee_eur": 52414052.90208004,
+        "top_decile_mean_log_residual": 0.7526570333714616,
+        "top_decile_rows": 22
+      },
+      "cv_fold_log_mae": [
+        0.8318934132254591,
+        0.7700216587122979,
+        0.923270232077732
+      ],
+      "cv_mean_log_mae": 0.8417284346718296,
+      "model": "gbm(max_depth=3, min_samples_leaf=20, max_iter=150)",
+      "test": {
+        "log_mae": 0.7372884908429698,
+        "mae_eur": 11431675.023673218,
+        "median_ae_eur": 6688492.986951528,
+        "r2_eur": 0.34637950875821566,
+        "rmse_eur": 16894274.467062846,
+        "rows": 214
+      }
+    },
+    "gbm_monotone": {
+      "compression": {
+        "calibration_slope": 0.9497724292662255,
+        "largest_fee_eur": 145000000.0,
+        "max_prediction_eur": 76358388.19205096,
+        "prediction_for_largest_fee_eur": 58216058.70161079,
+        "top_decile_mean_log_residual": 0.740144100209886,
+        "top_decile_rows": 22
+      },
+      "cv_fold_log_mae": [
+        0.8533389094738586,
+        0.7809403429045378,
+        0.9002367849002142
+      ],
+      "cv_mean_log_mae": 0.8448386790928701,
+      "model": "gbm_monotone(max_depth=3, min_samples_leaf=20, max_iter=300)",
+      "test": {
+        "log_mae": 0.7433192284511003,
+        "mae_eur": 11304412.62342035,
+        "median_ae_eur": 6198306.2505751895,
+        "r2_eur": 0.3590582054521103,
+        "rmse_eur": 16729617.518520944,
+        "rows": 214
+      }
+    },
+    "grid": [
+      {
+        "max_depth": 2,
+        "max_iter": 150,
+        "min_samples_leaf": 10
+      },
+      {
+        "max_depth": 2,
+        "max_iter": 300,
+        "min_samples_leaf": 10
+      },
+      {
+        "max_depth": 2,
+        "max_iter": 150,
+        "min_samples_leaf": 20
+      },
+      {
+        "max_depth": 2,
+        "max_iter": 300,
+        "min_samples_leaf": 20
+      },
+      {
+        "max_depth": 3,
+        "max_iter": 150,
+        "min_samples_leaf": 10
+      },
+      {
+        "max_depth": 3,
+        "max_iter": 300,
+        "min_samples_leaf": 10
+      },
+      {
+        "max_depth": 3,
+        "max_iter": 150,
+        "min_samples_leaf": 20
+      },
+      {
+        "max_depth": 3,
+        "max_iter": 300,
+        "min_samples_leaf": 20
+      }
+    ],
+    "headline_compression": {
+      "calibration_slope": 1.093296451791192,
+      "largest_fee_eur": 145000000.0,
+      "max_prediction_eur": 80124505.42418809,
+      "prediction_for_largest_fee_eur": 80124505.42418809,
+      "top_decile_mean_log_residual": 0.7807432515888014,
+      "top_decile_rows": 22
+    },
+    "l2_regularization": 1.0,
+    "learning_rate": 0.05,
+    "monotone_constraints": {
+      "age": -1,
+      "appearances": 0,
+      "assists": 1,
+      "assists_per90": 1,
+      "goals": 1,
+      "goals_per90": 1,
+      "minutes": 1
+    },
+    "note": "Post-holdout check on the headline inputs. Test columns are descriptive only."
+  },
+  "conformal": {
+    "enriched": {
+      "calibration_mean_residual": -0.019097329485121294,
+      "levels": {
+        "0.80": {
+          "calibration_rows": 204,
+          "factor": 3.264347326768145,
+          "level": 0.8,
+          "median_lower_eur": 3145545.935532377,
+          "median_prediction_eur": 10268156.730228845,
+          "median_upper_eur": 33518832.237506196,
+          "q_log": 1.1830598428278698,
+          "test": {
+            "coverage": 0.8785046728971962,
+            "rows": 214,
+            "share_above_upper": 0.0514018691588785,
+            "share_below_lower": 0.07009345794392523
+          },
+          "test_by_position": {
+            "DF": {
+              "coverage": 0.8771929824561403,
+              "rows": 57,
+              "share_above_upper": 0.03508771929824561,
+              "share_below_lower": 0.08771929824561403
+            },
+            "FW": {
+              "coverage": 0.9176470588235294,
+              "rows": 85,
+              "share_above_upper": 0.047058823529411764,
+              "share_below_lower": 0.03529411764705882
+            },
+            "GK": {
+              "coverage": 0.8,
+              "rows": 15,
+              "share_above_upper": 0.13333333333333333,
+              "share_below_lower": 0.06666666666666667
+            },
+            "MF": {
+              "coverage": 0.8421052631578947,
+              "rows": 57,
+              "share_above_upper": 0.05263157894736842,
+              "share_below_lower": 0.10526315789473684
+            }
+          },
+          "test_by_transfer_cycle": {
+            "2024": {
+              "coverage": 0.865979381443299,
+              "rows": 97,
+              "share_above_upper": 0.07216494845360824,
+              "share_below_lower": 0.061855670103092786
+            },
+            "2025": {
+              "coverage": 0.8888888888888888,
+              "rows": 117,
+              "share_above_upper": 0.03418803418803419,
+              "share_below_lower": 0.07692307692307693
+            }
+          },
+          "test_by_window": {
+            "in_season": {
+              "coverage": 0.8111111111111111,
+              "rows": 90,
+              "share_above_upper": 0.044444444444444446,
+              "share_below_lower": 0.14444444444444443
+            },
+            "off_season": {
+              "coverage": 0.9274193548387096,
+              "rows": 124,
+              "share_above_upper": 0.056451612903225805,
+              "share_below_lower": 0.016129032258064516
+            }
+          }
+        },
+        "0.90": {
+          "calibration_rows": 204,
+          "factor": 4.2744049625010145,
+          "level": 0.9,
+          "median_lower_eur": 2402241.6092779012,
+          "median_prediction_eur": 10268156.730228845,
+          "median_upper_eur": 43890263.35783333,
+          "q_log": 1.4526449026426462,
+          "test": {
+            "coverage": 0.9392523364485982,
+            "rows": 214,
+            "share_above_upper": 0.018691588785046728,
+            "share_below_lower": 0.04205607476635514
+          },
+          "test_by_position": {
+            "DF": {
+              "coverage": 0.9473684210526315,
+              "rows": 57,
+              "share_above_upper": 0.017543859649122806,
+              "share_below_lower": 0.03508771929824561
+            },
+            "FW": {
+              "coverage": 0.9411764705882353,
+              "rows": 85,
+              "share_above_upper": 0.023529411764705882,
+              "share_below_lower": 0.03529411764705882
+            },
+            "GK": {
+              "coverage": 0.8666666666666667,
+              "rows": 15,
+              "share_above_upper": 0.06666666666666667,
+              "share_below_lower": 0.06666666666666667
+            },
+            "MF": {
+              "coverage": 0.9473684210526315,
+              "rows": 57,
+              "share_above_upper": 0.0,
+              "share_below_lower": 0.05263157894736842
+            }
+          },
+          "test_by_transfer_cycle": {
+            "2024": {
+              "coverage": 0.9381443298969072,
+              "rows": 97,
+              "share_above_upper": 0.030927835051546393,
+              "share_below_lower": 0.030927835051546393
+            },
+            "2025": {
+              "coverage": 0.9401709401709402,
+              "rows": 117,
+              "share_above_upper": 0.008547008547008548,
+              "share_below_lower": 0.05128205128205128
+            }
+          },
+          "test_by_window": {
+            "in_season": {
+              "coverage": 0.8888888888888888,
+              "rows": 90,
+              "share_above_upper": 0.022222222222222223,
+              "share_below_lower": 0.08888888888888889
+            },
+            "off_season": {
+              "coverage": 0.9758064516129032,
+              "rows": 124,
+              "share_above_upper": 0.016129032258064516,
+              "share_below_lower": 0.008064516129032258
+            }
+          }
+        }
+      },
+      "model": "ridge(alpha=0.1)",
+      "variant": "exposure+price_level+context"
+    },
+    "followup": {
+      "calibration_mean_residual": 0.004340285313226737,
+      "levels": {
+        "0.80": {
+          "calibration_rows": 204,
+          "factor": 3.552277953996384,
+          "level": 0.8,
+          "median_lower_eur": 3149705.898498525,
+          "median_prediction_eur": 11188633.377086636,
+          "median_upper_eur": 39745138.23305091,
+          "q_log": 1.267589074882629,
+          "test": {
+            "coverage": 0.8691588785046729,
+            "rows": 214,
+            "share_above_upper": 0.06074766355140187,
+            "share_below_lower": 0.07009345794392523
+          },
+          "test_by_position": {
+            "DF": {
+              "coverage": 0.8245614035087719,
+              "rows": 57,
+              "share_above_upper": 0.08771929824561403,
+              "share_below_lower": 0.08771929824561403
+            },
+            "FW": {
+              "coverage": 0.8941176470588236,
+              "rows": 85,
+              "share_above_upper": 0.07058823529411765,
+              "share_below_lower": 0.03529411764705882
+            },
+            "GK": {
+              "coverage": 0.8666666666666667,
+              "rows": 15,
+              "share_above_upper": 0.06666666666666667,
+              "share_below_lower": 0.06666666666666667
+            },
+            "MF": {
+              "coverage": 0.8771929824561403,
+              "rows": 57,
+              "share_above_upper": 0.017543859649122806,
+              "share_below_lower": 0.10526315789473684
+            }
+          },
+          "test_by_transfer_cycle": {
+            "2024": {
+              "coverage": 0.865979381443299,
+              "rows": 97,
+              "share_above_upper": 0.07216494845360824,
+              "share_below_lower": 0.061855670103092786
+            },
+            "2025": {
+              "coverage": 0.8717948717948718,
+              "rows": 117,
+              "share_above_upper": 0.05128205128205128,
+              "share_below_lower": 0.07692307692307693
+            }
+          },
+          "test_by_window": {
+            "in_season": {
+              "coverage": 0.7888888888888889,
+              "rows": 90,
+              "share_above_upper": 0.06666666666666667,
+              "share_below_lower": 0.14444444444444443
+            },
+            "off_season": {
+              "coverage": 0.9274193548387096,
+              "rows": 124,
+              "share_above_upper": 0.056451612903225805,
+              "share_below_lower": 0.016129032258064516
+            }
+          }
+        },
+        "0.90": {
+          "calibration_rows": 204,
+          "factor": 5.458561500087664,
+          "level": 0.9,
+          "median_lower_eur": 2049739.4631067994,
+          "median_prediction_eur": 11188633.377086636,
+          "median_upper_eur": 61073847.84932243,
+          "q_log": 1.697185293522324,
+          "test": {
+            "coverage": 0.9626168224299065,
+            "rows": 214,
+            "share_above_upper": 0.009345794392523364,
+            "share_below_lower": 0.028037383177570093
+          },
+          "test_by_position": {
+            "DF": {
+              "coverage": 0.9649122807017544,
+              "rows": 57,
+              "share_above_upper": 0.017543859649122806,
+              "share_below_lower": 0.017543859649122806
+            },
+            "FW": {
+              "coverage": 0.9764705882352941,
+              "rows": 85,
+              "share_above_upper": 0.0,
+              "share_below_lower": 0.023529411764705882
+            },
+            "GK": {
+              "coverage": 0.9333333333333333,
+              "rows": 15,
+              "share_above_upper": 0.06666666666666667,
+              "share_below_lower": 0.0
+            },
+            "MF": {
+              "coverage": 0.9473684210526315,
+              "rows": 57,
+              "share_above_upper": 0.0,
+              "share_below_lower": 0.05263157894736842
+            }
+          },
+          "test_by_transfer_cycle": {
+            "2024": {
+              "coverage": 0.9381443298969072,
+              "rows": 97,
+              "share_above_upper": 0.020618556701030927,
+              "share_below_lower": 0.041237113402061855
+            },
+            "2025": {
+              "coverage": 0.9829059829059829,
+              "rows": 117,
+              "share_above_upper": 0.0,
+              "share_below_lower": 0.017094017094017096
+            }
+          },
+          "test_by_window": {
+            "in_season": {
+              "coverage": 0.9333333333333333,
+              "rows": 90,
+              "share_above_upper": 0.011111111111111112,
+              "share_below_lower": 0.05555555555555555
+            },
+            "off_season": {
+              "coverage": 0.9838709677419355,
+              "rows": 124,
+              "share_above_upper": 0.008064516129032258,
+              "share_below_lower": 0.008064516129032258
+            }
+          }
+        }
+      },
+      "model": "ridge(alpha=1.0)",
+      "variant": "exposure+price_level"
+    },
+    "headline": {
+      "calibration_mean_residual": 0.1852444079641001,
+      "levels": {
+        "0.80": {
+          "calibration_rows": 204,
+          "factor": 3.814776331308576,
+          "level": 0.8,
+          "median_lower_eur": 2448684.4554421064,
+          "median_prediction_eur": 9341186.318240106,
+          "median_upper_eur": 35634539.287942186,
+          "q_log": 1.338882034265021,
+          "test": {
+            "coverage": 0.8457943925233645,
+            "rows": 214,
+            "share_above_upper": 0.102803738317757,
+            "share_below_lower": 0.0514018691588785
+          },
+          "test_by_position": {
+            "DF": {
+              "coverage": 0.8596491228070176,
+              "rows": 57,
+              "share_above_upper": 0.08771929824561403,
+              "share_below_lower": 0.05263157894736842
+            },
+            "FW": {
+              "coverage": 0.8352941176470589,
+              "rows": 85,
+              "share_above_upper": 0.12941176470588237,
+              "share_below_lower": 0.03529411764705882
+            },
+            "GK": {
+              "coverage": 0.8,
+              "rows": 15,
+              "share_above_upper": 0.13333333333333333,
+              "share_below_lower": 0.06666666666666667
+            },
+            "MF": {
+              "coverage": 0.8596491228070176,
+              "rows": 57,
+              "share_above_upper": 0.07017543859649122,
+              "share_below_lower": 0.07017543859649122
+            }
+          },
+          "test_by_transfer_cycle": {
+            "2024": {
+              "coverage": 0.8144329896907216,
+              "rows": 97,
+              "share_above_upper": 0.13402061855670103,
+              "share_below_lower": 0.05154639175257732
+            },
+            "2025": {
+              "coverage": 0.8717948717948718,
+              "rows": 117,
+              "share_above_upper": 0.07692307692307693,
+              "share_below_lower": 0.05128205128205128
+            }
+          },
+          "test_by_window": {
+            "in_season": {
+              "coverage": 0.8222222222222222,
+              "rows": 90,
+              "share_above_upper": 0.07777777777777778,
+              "share_below_lower": 0.1
+            },
+            "off_season": {
+              "coverage": 0.8629032258064516,
+              "rows": 124,
+              "share_above_upper": 0.12096774193548387,
+              "share_below_lower": 0.016129032258064516
+            }
+          }
+        },
+        "0.90": {
+          "calibration_rows": 204,
+          "factor": 5.760727771416933,
+          "level": 0.9,
+          "median_lower_eur": 1621528.030513884,
+          "median_prediction_eur": 9341186.318240106,
+          "median_upper_eur": 53812036.20219345,
+          "q_log": 1.7510638159307401,
+          "test": {
+            "coverage": 0.9626168224299065,
+            "rows": 214,
+            "share_above_upper": 0.018691588785046728,
+            "share_below_lower": 0.018691588785046728
+          },
+          "test_by_position": {
+            "DF": {
+              "coverage": 0.9473684210526315,
+              "rows": 57,
+              "share_above_upper": 0.03508771929824561,
+              "share_below_lower": 0.017543859649122806
+            },
+            "FW": {
+              "coverage": 0.9764705882352941,
+              "rows": 85,
+              "share_above_upper": 0.011764705882352941,
+              "share_below_lower": 0.011764705882352941
+            },
+            "GK": {
+              "coverage": 0.9333333333333333,
+              "rows": 15,
+              "share_above_upper": 0.06666666666666667,
+              "share_below_lower": 0.0
+            },
+            "MF": {
+              "coverage": 0.9649122807017544,
+              "rows": 57,
+              "share_above_upper": 0.0,
+              "share_below_lower": 0.03508771929824561
+            }
+          },
+          "test_by_transfer_cycle": {
+            "2024": {
+              "coverage": 0.9484536082474226,
+              "rows": 97,
+              "share_above_upper": 0.030927835051546393,
+              "share_below_lower": 0.020618556701030927
+            },
+            "2025": {
+              "coverage": 0.9743589743589743,
+              "rows": 117,
+              "share_above_upper": 0.008547008547008548,
+              "share_below_lower": 0.017094017094017096
+            }
+          },
+          "test_by_window": {
+            "in_season": {
+              "coverage": 0.9555555555555556,
+              "rows": 90,
+              "share_above_upper": 0.011111111111111112,
+              "share_below_lower": 0.03333333333333333
+            },
+            "off_season": {
+              "coverage": 0.967741935483871,
+              "rows": 124,
+              "share_above_upper": 0.024193548387096774,
+              "share_below_lower": 0.008064516129032258
+            }
+          }
+        }
+      },
+      "model": "linear",
+      "variant": "headline"
+    },
+    "headline_worst_misses": [
+      {
+        "covered": true,
+        "fee_eur": 145000000.0,
+        "lower_eur": 21003722.276405822,
+        "name": "Alexander Isak",
+        "upper_eur": 305657069.6647752
+      },
+      {
+        "covered": false,
+        "fee_eur": 77000000.0,
+        "lower_eur": 4542450.69030605,
+        "name": "Jhon Dur\u00e1n",
+        "upper_eur": 66104111.067353
+      },
+      {
+        "covered": false,
+        "fee_eur": 60000000.0,
+        "lower_eur": 3563907.854490449,
+        "name": "Moussa Diaby",
+        "upper_eur": 51863848.3872886
+      },
+      {
+        "covered": true,
+        "fee_eur": 70000000.0,
+        "lower_eur": 6506104.211354066,
+        "name": "Luis D\u00edaz",
+        "upper_eur": 94680215.17734842
+      },
+      {
+        "covered": false,
+        "fee_eur": 60000000.0,
+        "lower_eur": 3891265.837977659,
+        "name": "Pedro Neto",
+        "upper_eur": 56627731.4843313
+      }
+    ],
+    "method": "split conformal on |log1p(fee) - prediction| from the expanding CV folds' validation cycles; interval = expm1(prediction -/+ q), lower bound clamped at zero",
+    "predict_level": 0.8
+  },
+  "context_round": {
+    "ablation_cv": {
+      "europe": {
+        "cv_mean_log_mae": 0.7029433640093502,
+        "dropped": [
+          "europe_minutes"
+        ],
+        "model": "linear"
+      },
+      "other_league": {
+        "cv_mean_log_mae": 0.7292276187695994,
+        "dropped": [
+          "other_league_minutes",
+          "other_league_goals"
+        ],
+        "model": "ridge(alpha=0.1)"
+      },
+      "team": {
+        "cv_mean_log_mae": 0.7503812099308727,
+        "dropped": [
+          "team_points_per_game"
+        ],
+        "model": "ridge(alpha=10.0)"
+      }
+    },
+    "definitions": {
+      "europe_minutes": "minutes in CL, EL, UCOL inside the lookback date window",
+      "lookback_date_window": "[first match of the earlier completed lookback season, D)",
+      "other_league_goals": "goals in those leagues inside the same window",
+      "other_league_minutes": "minutes in first-tier domestic leagues other than the study league inside the lookback date window",
+      "team_points_per_game": "mean league points the player's club took in the lookback PL matches he played"
+    },
+    "first_round_selected_cv_log_mae": 0.786386297581534,
+    "headline_worst_misses": [
+      {
+        "enriched_eur": 102391604.7061035,
+        "europe_minutes": 313.0,
+        "fee_eur": 145000000.0,
+        "followup_eur": 96278587.75003514,
+        "headline_eur": 80124505.42418809,
+        "name": "Alexander Isak",
+        "other_league_goals": 0.0,
+        "other_league_minutes": 0.0,
+        "team_points_per_game": 1.703125,
+        "transfer_id": "dc0869be613b3a6e"
+      },
+      {
+        "enriched_eur": 24304212.286357097,
+        "europe_minutes": 240.0,
+        "fee_eur": 77000000.0,
+        "followup_eur": 25480592.629399303,
+        "headline_eur": 17328436.194292154,
+        "name": "Jhon Dur\u00e1n",
+        "other_league_goals": 0.0,
+        "other_league_minutes": 0.0,
+        "team_points_per_game": 1.5818181818181818,
+        "transfer_id": "5eda7153a97a94e7"
+      },
+      {
+        "enriched_eur": 37340313.028409846,
+        "europe_minutes": 1079.0,
+        "fee_eur": 60000000.0,
+        "followup_eur": 17413884.874575194,
+        "headline_eur": 13595514.145051226,
+        "name": "Moussa Diaby",
+        "other_league_goals": 9.0,
+        "other_league_minutes": 2717.0,
+        "team_points_per_game": 1.7894736842105263,
+        "transfer_id": "5f4c9e36001b3378"
+      },
+      {
+        "enriched_eur": 57136047.50088168,
+        "europe_minutes": 1073.0,
+        "fee_eur": 70000000.0,
+        "followup_eur": 35663236.044406906,
+        "headline_eur": 24819335.169276867,
+        "name": "Luis D\u00edaz",
+        "other_league_goals": 0.0,
+        "other_league_minutes": 0.0,
+        "team_points_per_game": 2.191780821917808,
+        "transfer_id": "8de0257c321a05f5"
+      },
+      {
+        "enriched_eur": 14843537.948560763,
+        "europe_minutes": 0.0,
+        "fee_eur": 60000000.0,
+        "followup_eur": 19264288.215697654,
+        "headline_eur": 14844311.632323137,
+        "name": "Pedro Neto",
+        "other_league_goals": 0.0,
+        "other_league_minutes": 0.0,
+        "team_points_per_game": 1.236842105263158,
+        "transfer_id": "74aeaa39159f3d30"
+      }
+    ],
+    "note": "Second post-holdout round, designed after both the headline and the first follow-up had been scored. Variant selection used training-window CV only; test columns for non-selected variants are descriptive only.",
+    "selected_coefficients": [
+      {
+        "coef_log1p": 0.06273214071048253,
+        "constant": false,
+        "kind": "num",
+        "model": "ridge(alpha=0.1)",
+        "multiplier_on_1p_fee": 1.0647416001025125,
+        "selected": true,
+        "term": "goals_per_season",
+        "train_mean": 2.0353690304118794,
+        "train_sd": 3.3737169926489257
+      },
+      {
+        "coef_log1p": 0.026560504782884225,
+        "constant": false,
+        "kind": "num",
+        "model": "ridge(alpha=0.1)",
+        "multiplier_on_1p_fee": 1.0269163787345732,
+        "selected": true,
+        "term": "assists_per_season",
+        "train_mean": 1.4101490061794568,
+        "train_sd": 1.9715035911024188
+      },
+      {
+        "coef_log1p": 0.889526966758105,
+        "constant": false,
+        "kind": "num",
+        "model": "ridge(alpha=0.1)",
+        "multiplier_on_1p_fee": 2.433978026416388,
+        "selected": true,
+        "term": "minutes_share",
+        "train_mean": 0.3526471755509718,
+        "train_sd": 0.26124744143683454
+      },
+      {
+        "coef_log1p": -0.3388614719460516,
+        "constant": false,
+        "kind": "num",
+        "model": "ridge(alpha=0.1)",
+        "multiplier_on_1p_fee": 0.712581154732929,
+        "selected": true,
+        "term": "appearance_share",
+        "train_mean": 0.44203641127055865,
+        "train_sd": 0.27107479506829996
+      },
+      {
+        "coef_log1p": 0.13246119876876222,
+        "constant": false,
+        "kind": "num",
+        "model": "ridge(alpha=0.1)",
+        "multiplier_on_1p_fee": 1.14163471839709,
+        "selected": true,
+        "term": "goals_per90",
+        "train_mean": 0.13394129325023793,
+        "train_sd": 0.16615509697480385
+      },
+      {
+        "coef_log1p": 0.036551290361067516,
+        "constant": false,
+        "kind": "num",
+        "model": "ridge(alpha=0.1)",
+        "multiplier_on_1p_fee": 1.0372275024265638,
+        "selected": true,
+        "term": "assists_per90",
+        "train_mean": 0.10644421620787463,
+        "train_sd": 0.13346514563108663
+      },
+      {
+        "coef_log1p": -0.549776260764391,
+        "constant": false,
+        "kind": "num",
+        "model": "ridge(alpha=0.1)",
+        "multiplier_on_1p_fee": 0.5770789111319592,
+        "selected": true,
+        "term": "age",
+        "train_mean": 25.958333333333332,
+        "train_sd": 3.3232660474632816
+      },
+      {
+        "coef_log1p": 0.1847633024945827,
+        "constant": false,
+        "kind": "num",
+        "model": "ridge(alpha=0.1)",
+        "multiplier_on_1p_fee": 1.202933675027369,
+        "selected": true,
+        "term": "league_price_level",
+        "train_mean": 16.24993668864483,
+        "train_sd": 0.24012536689656702
+      },
+      {
+        "coef_log1p": 0.15231962919146083,
+        "constant": false,
+        "kind": "num",
+        "model": "ridge(alpha=0.1)",
+        "multiplier_on_1p_fee": 1.1645323955004967,
+        "selected": true,
+        "term": "europe_minutes",
+        "train_mean": 297.025,
+        "train_sd": 421.0309264670075
+      },
+      {
+        "coef_log1p": 0.1461541520462371,
+        "constant": false,
+        "kind": "num",
+        "model": "ridge(alpha=0.1)",
+        "multiplier_on_1p_fee": 1.1573745859609301,
+        "selected": true,
+        "term": "other_league_minutes",
+        "train_mean": 708.2770833333333,
+        "train_sd": 1108.1926992366864
+      },
+      {
+        "coef_log1p": 0.04120774886017174,
+        "constant": false,
+        "kind": "num",
+        "model": "ridge(alpha=0.1)",
+        "multiplier_on_1p_fee": 1.0420685716173854,
+        "selected": true,
+        "term": "other_league_goals",
+        "train_mean": 1.5833333333333333,
+        "train_sd": 3.8353255692603496
+      },
+      {
+        "coef_log1p": 0.21935512845902178,
+        "constant": false,
+        "kind": "num",
+        "model": "ridge(alpha=0.1)",
+        "multiplier_on_1p_fee": 1.2452734302065653,
+        "selected": true,
+        "term": "team_points_per_game",
+        "train_mean": 1.2766622337240188,
+        "train_sd": 0.5067559235651987
+      },
+      {
+        "coef_log1p": -0.11203995372721987,
+        "constant": NaN,
+        "kind": "cat",
+        "model": "ridge(alpha=0.1)",
+        "multiplier_on_1p_fee": 0.8940085378135426,
+        "selected": true,
+        "term": "position_DF",
+        "train_mean": NaN,
+        "train_sd": NaN
+      },
+      {
+        "coef_log1p": 0.13012239361807268,
+        "constant": NaN,
+        "kind": "cat",
+        "model": "ridge(alpha=0.1)",
+        "multiplier_on_1p_fee": 1.138967777181106,
+        "selected": true,
+        "term": "position_FW",
+        "train_mean": NaN,
+        "train_sd": NaN
+      },
+      {
+        "coef_log1p": -0.0791425620512151,
+        "constant": NaN,
+        "kind": "cat",
+        "model": "ridge(alpha=0.1)",
+        "multiplier_on_1p_fee": 0.9239082008076723,
+        "selected": true,
+        "term": "position_GK",
+        "train_mean": NaN,
+        "train_sd": NaN
+      },
+      {
+        "coef_log1p": 0.0610601221601587,
+        "constant": NaN,
+        "kind": "cat",
+        "model": "ridge(alpha=0.1)",
+        "multiplier_on_1p_fee": 1.0629628198870016,
+        "selected": true,
+        "term": "position_MF",
+        "train_mean": NaN,
+        "train_sd": NaN
+      },
+      {
+        "coef_log1p": 16.120966268874476,
+        "constant": NaN,
+        "kind": "intercept",
+        "model": "ridge(alpha=0.1)",
+        "multiplier_on_1p_fee": 10028747.420851264,
+        "selected": true,
+        "term": "(intercept)",
+        "train_mean": NaN,
+        "train_sd": NaN
+      }
+    ],
+    "selected_model": "ridge(alpha=0.1)",
+    "selected_variant": "exposure+price_level+context",
+    "share_with_europe_minutes": {
+      "test": 0.43457943925233644,
+      "train": 0.48333333333333334
+    },
+    "share_with_other_league_minutes": {
+      "test": 0.40654205607476634,
+      "train": 0.36666666666666664
+    },
+    "variant_order": [
+      "headline+context",
+      "headline+trend+context",
+      "headline+price_level+context",
+      "exposure+context",
+      "exposure+trend+context",
+      "exposure+price_level+context"
+    ],
+    "variants": {
+      "exposure+context": {
+        "clamped_at_zero": 0,
+        "cv_fold_log_mae": [
+          0.7147434911516999,
+          0.7510592480306479,
+          0.8209382846514637
+        ],
+        "cv_mean_log_mae": 0.7622470079446039,
+        "cv_std_log_mae": 0.04406970252175227,
+        "model": "ridge(alpha=10.0)",
+        "numeric_features": [
+          "goals_per_season",
+          "assists_per_season",
+          "minutes_share",
+          "appearance_share",
+          "goals_per90",
+          "assists_per90",
+          "age",
+          "europe_minutes",
+          "other_league_minutes",
+          "other_league_goals",
+          "team_points_per_game"
+        ],
+        "selected_by_cv": false,
+        "test": {
+          "log_mae": 0.6965463476999144,
+          "mae_eur": 11010534.593459353,
+          "median_ae_eur": 6142368.331484036,
+          "r2_eur": 0.40895904657735127,
+          "rmse_eur": 16065176.569693476,
+          "rows": 214
+        },
+        "test_mean_log_residual": 0.3339605448212287
+      },
+      "exposure+price_level+context": {
+        "clamped_at_zero": 0,
+        "cv_fold_log_mae": [
+          0.6721501145240513,
+          0.7499960967759289,
+          0.7358484739735351
+        ],
+        "cv_mean_log_mae": 0.7193315617578385,
+        "cv_std_log_mae": 0.03385858364871638,
+        "model": "ridge(alpha=0.1)",
+        "numeric_features": [
+          "goals_per_season",
+          "assists_per_season",
+          "minutes_share",
+          "appearance_share",
+          "goals_per90",
+          "assists_per90",
+          "age",
+          "league_price_level",
+          "europe_minutes",
+          "other_league_minutes",
+          "other_league_goals",
+          "team_points_per_game"
+        ],
+        "selected_by_cv": true,
+        "test": {
+          "log_mae": 0.6116573888051358,
+          "mae_eur": 9190451.67119933,
+          "median_ae_eur": 5379669.862834858,
+          "r2_eur": 0.5832161549635351,
+          "rmse_eur": 13490627.613427516,
+          "rows": 214
+        },
+        "test_mean_log_residual": 0.14052358804443713
+      },
+      "exposure+trend+context": {
+        "clamped_at_zero": 0,
+        "cv_fold_log_mae": [
+          0.7296619585938194,
+          0.738414378360677,
+          0.7122597088819543
+        ],
+        "cv_mean_log_mae": 0.7267786819454836,
+        "cv_std_log_mae": 0.010870499744980637,
+        "model": "ridge(alpha=10.0)",
+        "numeric_features": [
+          "goals_per_season",
+          "assists_per_season",
+          "minutes_share",
+          "appearance_share",
+          "goals_per90",
+          "assists_per90",
+          "age",
+          "cycle_trend",
+          "europe_minutes",
+          "other_league_minutes",
+          "other_league_goals",
+          "team_points_per_game"
+        ],
+        "selected_by_cv": false,
+        "test": {
+          "log_mae": 0.5810090971283935,
+          "mae_eur": 8609031.541910296,
+          "median_ae_eur": 5571326.573253447,
+          "r2_eur": 0.6431494042808928,
+          "rmse_eur": 12483027.551562916,
+          "rows": 214
+        },
+        "test_mean_log_residual": -0.05462567050077321
+      },
+      "headline+context": {
+        "clamped_at_zero": 0,
+        "cv_fold_log_mae": [
+          0.6957612354289661,
+          0.7636279716025535,
+          0.8360856531219091
+        ],
+        "cv_mean_log_mae": 0.7651582867178095,
+        "cv_std_log_mae": 0.05729742256262418,
+        "model": "ridge(alpha=1.0)",
+        "numeric_features": [
+          "goals",
+          "assists",
+          "minutes",
+          "appearances",
+          "goals_per90",
+          "assists_per90",
+          "age",
+          "europe_minutes",
+          "other_league_minutes",
+          "other_league_goals",
+          "team_points_per_game"
+        ],
+        "selected_by_cv": false,
+        "test": {
+          "log_mae": 0.7215172346543425,
+          "mae_eur": 11411566.974631231,
+          "median_ae_eur": 6536350.886965077,
+          "r2_eur": 0.37290468313177494,
+          "rmse_eur": 16547923.128036946,
+          "rows": 214
+        },
+        "test_mean_log_residual": 0.37679739343607827
+      },
+      "headline+price_level+context": {
+        "clamped_at_zero": 0,
+        "cv_fold_log_mae": [
+          0.6534554035776101,
+          0.7531856302506036,
+          0.7546720267522978
+        ],
+        "cv_mean_log_mae": 0.7204376868601705,
+        "cv_std_log_mae": 0.04736751382504638,
+        "model": "ridge(alpha=1.0)",
+        "numeric_features": [
+          "goals",
+          "assists",
+          "minutes",
+          "appearances",
+          "goals_per90",
+          "assists_per90",
+          "age",
+          "league_price_level",
+          "europe_minutes",
+          "other_league_minutes",
+          "other_league_goals",
+          "team_points_per_game"
+        ],
+        "selected_by_cv": false,
+        "test": {
+          "log_mae": 0.621540853352693,
+          "mae_eur": 9492181.056319961,
+          "median_ae_eur": 5585819.937801135,
+          "r2_eur": 0.5661228849587432,
+          "rmse_eur": 13764488.836169437,
+          "rows": 214
+        },
+        "test_mean_log_residual": 0.14649808867318517
+      },
+      "headline+trend+context": {
+        "clamped_at_zero": 0,
+        "cv_fold_log_mae": [
+          0.7244376944712754,
+          0.7371660858950617,
+          0.7282401265523352
+        ],
+        "cv_mean_log_mae": 0.7299479689728908,
+        "cv_std_log_mae": 0.005334824668119614,
+        "model": "ridge(alpha=10.0)",
+        "numeric_features": [
+          "goals",
+          "assists",
+          "minutes",
+          "appearances",
+          "goals_per90",
+          "assists_per90",
+          "age",
+          "cycle_trend",
+          "europe_minutes",
+          "other_league_minutes",
+          "other_league_goals",
+          "team_points_per_game"
+        ],
+        "selected_by_cv": false,
+        "test": {
+          "log_mae": 0.5827599340006536,
+          "mae_eur": 8559499.107699756,
+          "median_ae_eur": 5387962.331503577,
+          "r2_eur": 0.647049895139008,
+          "rmse_eur": 12414618.367575293,
+          "rows": 214
+        },
+        "test_mean_log_residual": -0.06629894976626566
+      }
+    },
+    "vs_headline_and_followup": {
+      "comparisons": {
+        "followup": {
+          "ci_high": 367107.2624153343,
+          "ci_low": -1112204.0335222408,
+          "observed_delta_mae_eur": -358250.6927532293,
+          "verdict": "too uncertain to call; interval includes zero"
+        },
+        "headline": {
+          "ci_high": -1120779.722220273,
+          "ci_low": -2952785.3282558257,
+          "observed_delta_mae_eur": -2007404.7924015112,
+          "verdict": "enriched MAE lower; interval excludes zero"
+        }
+      },
+      "confidence": 0.95,
+      "delta_definition": "MAE(reference model) - MAE(comparison); negative favors the model",
+      "reference": "enriched",
+      "replicates": 5000,
+      "resampling_unit": "player",
+      "seed": 42,
+      "unique_test_players": 203
+    }
+  },
   "cv_folds": [
     2021,
     2022,
     2023
   ],
-  "followup_config_hash": "538400f3d9f93739080423ff354633871a2dc39d5116f5b3ce8777ff5f0fee56",
+  "followup_config_hash": "937e3f5319b7235dd8904350aa4295867a40c26c4f443efbd66acc3f93278d8d",
   "followup_vs_headline": {
     "comparisons": {
       "headline": {
@@ -26,6 +1153,23 @@
   "headline_run_id": "751f64196525f1a9",
   "market_value_comparator": {
     "bootstrap": {
+      "enriched": {
+        "comparisons": {
+          "market_value": {
+            "ci_high": 3511621.0599927735,
+            "ci_low": 956836.3771246552,
+            "observed_delta_mae_eur": 2244704.007647927,
+            "verdict": "market value MAE lower; interval excludes zero"
+          }
+        },
+        "confidence": 0.95,
+        "delta_definition": "MAE(reference model) - MAE(comparison); negative favors the model",
+        "reference": "enriched",
+        "replicates": 5000,
+        "resampling_unit": "player",
+        "seed": 42,
+        "unique_test_players": 203
+      },
       "followup": {
         "comparisons": {
           "market_value": {
@@ -64,6 +1208,14 @@
     "matched_rows": 214,
     "median_valuation_age_days": 54.0,
     "methods": {
+      "enriched": {
+        "log_mae": 0.6116573888051358,
+        "mae_eur": 9190451.67119933,
+        "median_ae_eur": 5379669.862834858,
+        "r2_eur": 0.5832161549635351,
+        "rmse_eur": 13490627.613427516,
+        "rows": 214
+      },
       "followup": {
         "log_mae": 0.6455252236113216,
         "mae_eur": 9548702.363952558,

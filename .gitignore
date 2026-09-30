@@ -18,5 +18,8 @@ data/processed/*
 artifacts/*
 !artifacts/.gitkeep
 
+# Local football-data.org API dumps (not a pinned source; not used by the pipeline)
+moredata/
+
 # personal coding-agent rules (local only)
 AGENTS.md

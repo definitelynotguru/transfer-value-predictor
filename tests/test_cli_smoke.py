@@ -65,6 +65,7 @@ def test_pipeline_and_predict(env):
 
     out = _ok(["predict", "--player", "alex example", "--config", cfg])
     assert "Alex Example" in out and "hypothetical" in out.lower()
+    assert "interval: unavailable (run tvp followup" in out
 
 
 def test_rerun_is_deterministic(env):

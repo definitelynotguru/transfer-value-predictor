@@ -21,6 +21,14 @@ SEASON_DATES = {
     2023: ["2023-08-12", "2023-11-01", "2024-02-01", "2024-05-19"],
 }
 CUP_GAME = {"game_id": 9001, "season": 2020, "date": "2021-01-09"}
+# (game_id, competition, date, minutes, goals) for Alex Example (101, transfer 2023-07-15).
+CONTEXT_APPS = [
+    (9101, "CL", "2022-10-01", 80, 0),  # counted
+    (9102, "CL", "2023-07-15", 90, 1),  # transfer day: excluded
+    (9103, "L1", "2021-03-01", 90, 2),  # before the lookback window: excluded
+    (9104, "L1", "2023-03-01", 70, 1),  # counted
+    (9105, "FAC", "2022-01-08", 90, 1),  # cup: neither group
+]
 LINEUP_POS = ["Goalkeeper", "Centre-Back", "Central Midfield", "Centre-Forward"]
 PLAYER_POS = ["Goalkeeper", "Defender", "Midfield", "Attack"]
 
@@ -59,6 +67,19 @@ def _games() -> pd.DataFrame:
                     "away_club_goals": 0,
                 }
             )
+    for gid, comp, date, _, _ in CONTEXT_APPS:
+        rows.append(
+            {
+                "game_id": gid,
+                "competition_id": comp,
+                "season": 2022,
+                "date": date,
+                "home_club_id": 1,
+                "away_club_id": 5,
+                "home_club_goals": 1,
+                "away_club_goals": 1,
+            }
+        )
     rows.append(
         {
             **CUP_GAME,
@@ -147,6 +168,25 @@ def build(raw_dir: Path) -> None:
     play(101, [2021, 2022], goals=1, lineup="Centre-Forward")
     play(101, [2023], goals=3, lineup="Centre-Forward")  # after the transfer: must be ignored
     transfer(101, "2023-07-15", 30_000_000)
+    # Non-PL context for 101. Lookback date window is [2021-08-14, 2023-07-15).
+    for gid, comp, date, mins, goals in CONTEXT_APPS:
+        apps.append(
+            {
+                "appearance_id": f"{gid}_101",
+                "game_id": gid,
+                "player_id": 101,
+                "player_club_id": 1,
+                "player_current_club_id": 1,
+                "date": date,
+                "player_name": "101",
+                "competition_id": comp,
+                "yellow_cards": 0,
+                "red_cards": 0,
+                "goals": goals,
+                "assists": 0,
+                "minutes_played": mins,
+            }
+        )
     # 102 loan (fee 0), 103 undisclosed (null fee)
     player(102, "Loan Player", "1996-01-01", "Midfield")
     play(102, [2019, 2020], lineup="Central Midfield")
@@ -245,6 +285,18 @@ def build(raw_dir: Path) -> None:
                 "competition_code": "fa-cup",
                 "type": "domestic_cup",
                 "name": "fa-cup",
+            },
+            {
+                "competition_id": "CL",
+                "competition_code": "uefa-champions-league",
+                "type": "international_cup",
+                "name": "uefa-champions-league",
+            },
+            {
+                "competition_id": "L1",
+                "competition_code": "bundesliga",
+                "type": "domestic_league",
+                "name": "bundesliga",
             },
         ]
     )

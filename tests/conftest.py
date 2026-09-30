@@ -54,6 +54,8 @@ FIXTURE_FOLLOWUP = {
     "data": {"raw_dir": "data/raw", "output_dir": "artifacts/followup"},
     "price_level": {"window_days": 365, "min_transfers": 1},
     "market_value": {"file": VALUATIONS_FILE, "max_staleness_days": 365},
+    "context": {"europe_competitions": ["CL", "EL", "UCOL"]},
+    "conformal": {"levels": [0.8, 0.9], "predict_level": 0.8},
 }
 
 

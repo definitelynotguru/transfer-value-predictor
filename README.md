@@ -6,7 +6,9 @@
 
 Short answer: a plain linear model on `log1p(fee)` beats every naive baseline by about €4m of mean absolute error, and the bootstrap interval excludes zero. It is still wrong by €11m on an average transfer, it under-predicts 70% of test transfers, and it misses elite and Saudi-bound forwards by €45m to €65m. Jump to the [five worst misses](#five-worst-misses).
 
-A [follow-up designed after the holdout was opened](#follow-up-after-the-holdout-not-a-headline-result) adds exposure-normalized inputs and a fee-inflation term, picked by the same training-window CV. It cuts test MAE by about €1.6m. Transfermarkt's own market value, shown as a comparison row only, still beats every model here. The headline numbers below are the pre-registered run and are unchanged.
+A [follow-up designed after the holdout was opened](#follow-up-after-the-holdout-not-a-headline-result) adds exposure-normalized inputs and a fee-inflation term, picked by the same training-window CV. It cuts test MAE by about €1.6m. A second post-holdout round adds as-of context from the same raw snapshot (European cup minutes, other-league minutes and goals, team points per game). That improves CV clearly, but on the test set it is not distinguishable from the first follow-up. Transfermarkt's own market value, shown as a comparison row only, still beats every model here. The headline numbers below are the pre-registered run and are unchanged.
+
+How wide is the honest range? A conformal interval around the headline model, calibrated on training-window CV errors only, needs [a factor of about 3.8 either way](#how-wide-is-the-range-added-after-the-holdout) to cover 80% of transfers. For a €9m prediction, that means roughly €2m to €36m. Gradient boosting, with or without monotonic constraints, [does not fix the compressed elite fees](#follow-up-after-the-holdout-not-a-headline-result).
 
 ## What this is, and what it is not
 
@@ -119,6 +121,35 @@ The five largest absolute euro errors of the selected model, ranked deterministi
 
 Common thread: three of five had limited PL minutes in the lookback, two went to Saudi clubs, and the one elite striker with a full record was still compressed toward the middle. Residuals alone cannot say which factor dominated in any case.
 
+## How wide is the range? (added after the holdout)
+
+A point estimate hides how wrong the model usually is. This section wraps the **headline model** in a split-conformal interval. It was designed after the holdout had been scored, so it is not pre-registered, but nothing in it was tuned on the test set:
+
+- **Calibration** uses only the training window: the absolute `log1p(fee)` errors each expanding CV fold made on its validation cycle (the same folds that picked the model). The width is the ⌈(n + 1) × level⌉-th smallest of those n errors.
+- **Interval**: `expm1(prediction ∓ q)`, with the lower end clamped at zero. It is symmetric on the log scale, so it runs further above the prediction than below it in euros. It also converts exactly, which avoids the retransformation problem above.
+- **Nominal levels** 80% and 90% were fixed before test coverage was computed. `tvp predict` prints the 80% interval.
+
+The same procedure is repeated once for the two follow-up models further down, as a comparison. That answers whether the price-level term (and then the context inputs) makes the range narrower or the misses less lopsided.
+
+<!-- BEGIN:conformal -->
+| Model | Nominal | Calibration rows | Interval (on 1 + fee) | Test coverage | Above upper | Below lower | Median test interval |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| **Headline (LinearRegression)** | 80% | 204 | ×/÷ 3.81 | 85% | 10% | 5% | €2.4m to €35.6m |
+| **Headline (LinearRegression)** | 90% | 204 | ×/÷ 5.76 | 96% | 2% | 2% | €1.6m to €53.8m |
+| Follow-up (exposure+price_level) | 80% | 204 | ×/÷ 3.55 | 87% | 6% | 7% | €3.1m to €39.7m |
+| Follow-up (exposure+price_level) | 90% | 204 | ×/÷ 5.46 | 96% | 1% | 3% | €2.0m to €61.1m |
+| Enriched follow-up (exposure+price_level+context) | 80% | 204 | ×/÷ 3.26 | 88% | 5% | 7% | €3.1m to €33.5m |
+| Enriched follow-up (exposure+price_level+context) | 90% | 204 | ×/÷ 4.27 | 94% | 2% | 4% | €2.4m to €43.9m |
+
+Headline at 80%, test coverage by cycle: 2024 81%, 2025 87%; by position: DF 86%, FW 84%, GK 80%, MF 86%; by window: in_season 82%, off_season 86%. Mean calibration residual (log scale): headline +0.185, followup +0.004, enriched -0.019. Headline worst five at 80%: Alexander Isak €145m in €21.0m to €306m (covered); Jhon Durán €77m in €4.5m to €66m (missed); Moussa Diaby €60m in €3.6m to €52m (missed); Luis Díaz €70m in €6.5m to €95m (covered); Pedro Neto €60m in €3.9m to €57m (missed).
+<!-- END:conformal -->
+
+Reading:
+
+- **The headline interval over-covers, and its misses are lopsided.** At 80% nominal it covers about 85% of test transfers. The CV fold models were trained on fewer rows than the final model, so their errors, and therefore the widths, are a little too large. That is the safe direction. Twice as many fees land above the interval as below it, which is the time drift from the diagnostics showing up again (the calibration errors themselves average +0.19 on the log scale).
+- **The price-level term fixes the lopsidedness more than the width.** The follow-up's interval is only slightly narrower, but its misses split roughly evenly above and below. The context inputs narrow it further, most visibly at 90%.
+- **The width is the finding.** "Within about 4× either way, four times in five" is how precise recent PL performance, age, and position can be about a reported fee. Coverage is marginal. It holds on average over transfers, not for any one player, and it assumes the next cycles' errors look like the last training cycles' errors.
+
 ## Follow-up after the holdout (not a headline result)
 
 Everything in this section was designed **after** the headline test set had been scored, in response to review. It is reported separately so the pre-registered numbers above stay honest. Ground rules:
@@ -151,6 +182,10 @@ Median league price level by cycle: 2014: €9.8m, 2015: €6.0m, 2016: €9.5m,
 
 Reading: both time terms help in CV, and the price level helps most. Exposure normalization on its own barely moves CV. With a time term, CV prefers it by a small margin. The selected follow-up model removes most of the systematic under-prediction on the test set (compare the mean log residual with the headline's), and the improvement over the headline is larger than the bootstrap noise. The lowest test MAE actually belongs to `headline+trend` (€9.43m), which CV did not pick. It overshoots on the log scale (mean residual below zero), and choosing it now would be selecting on the test set. It is still one post-hoc experiment on one holdout, so read it as "the drift diagnosis was right", not as a new, validated headline.
 
+<!-- BEGIN:boosting -->
+**Gradient boosting did not fix the compression.** Same headline inputs, same folds, a fixed 8-point grid (`HistGradientBoostingRegressor`, learning rate 0.05). CV log-MAE: unconstrained 0.8417, monotonic 0.8448 (more goals, assists, minutes and per-90 output can only raise the prediction, more age can only lower it), against 0.8097 for the headline linear model, so CV would never have picked either. On the test set (descriptive only): test MAE €11.43m and €11.30m against €11.20m. The top of the market gets no closer: linear €80.1m for the €145m transfer, top-decile log residual +0.78, slope 1.09; boosting €52.4m for the €145m transfer, top-decile log residual +0.75, slope 1.04; monotonic €58.2m for the €145m transfer, top-decile log residual +0.74, slope 0.95. Trees cannot predict above the leaf averages they were trained on, and a slope of actual on predicted log fee near 1 says the linear predictions are not too tightly bunched for their inputs. The elite misses are a missing-information problem, not a functional-form one.
+<!-- END:boosting -->
+
 ### Did the winter-window fix work?
 
 <!-- BEGIN:window -->
@@ -174,12 +209,50 @@ Market value is **never** a model input. Here it is scored as if it were a predi
 | Train median fee | €15.25m | €9.20m | 0.929 |
 | Headline model (LinearRegression) | €11.20m | €6.54m | 0.719 |
 | Follow-up model (exposure+price_level) | €9.55m | €6.32m | 0.646 |
+| Enriched follow-up (exposure+price_level+context) | €9.19m | €5.38m | 0.612 |
 | Transfermarkt market value (comparator) | €6.95m | €4.50m | 0.496 |
 
-Matched test rows: 214 of 214 (rule: latest valuation with valuation_date < transfer_date and at most 365 days old; median valuation age 54 days). Reported fee above market value in 54% of rows. Paired bootstrap: follow-up model minus market value €2.60m (95% CI €1.22m to €3.98m); headline model minus market value €4.25m (95% CI €2.70m to €5.79m).
+Matched test rows: 214 of 214 (rule: latest valuation with valuation_date < transfer_date and at most 365 days old; median valuation age 54 days). Reported fee above market value in 54% of rows. Paired bootstrap: enriched follow-up minus market value €2.24m (95% CI €0.96m to €3.51m); follow-up model minus market value €2.60m (95% CI €1.22m to €3.98m); headline model minus market value €4.25m (95% CI €2.70m to €5.79m).
 <!-- END:market_value -->
 
-Market value beats both models comfortably. That is expected rather than embarrassing. Transfermarkt's valuers see things this feature set leaves out by design, such as contract length, injuries, non-PL performance, and transfer rumours. A valuation posted a few weeks before a deal may already reflect the negotiation. So this is a reference point, not a ceiling, and beating or losing to it proves neither leakage nor purity.
+Market value beats every model comfortably. That is expected rather than embarrassing. Transfermarkt's valuers see things this feature set leaves out by design, such as contract length, injuries, and transfer rumours. A valuation posted a few weeks before a deal may already reflect the negotiation. So this is a reference point, not a ceiling, and beating or losing to it proves neither leakage nor purity.
+
+### Second round: richer as-of inputs
+
+The headline lookback reads Premier League matches only. The same pinned raw files also record European club competitions, about a dozen other European first-tier leagues, and every PL result since 2012. This round builds four more inputs from them under the same as-of rule (only matches strictly before the transfer date). It was designed after both the headline and the first follow-up had been scored, and the misses above motivated it, so it is a second post-hoc experiment:
+
+- `europe_minutes`: minutes in the Champions League, Europa League, and Conference League.
+- `other_league_minutes`, `other_league_goals`: minutes and goals in first-tier leagues other than the PL. This makes a recent arrival's earlier record visible, such as Diaby's Bundesliga season.
+- `team_points_per_game`: mean league points the player's club took in the lookback PL matches he played. It measures how strong the team he was playing for was, not the buyer.
+
+The first two groups use a lookback date window that runs from the first match of the earlier completed lookback season to the day before the transfer. That covers the same period as the PL lookback. Each first-round input set gets the four columns added, and the same 13-model grid and folds pick one variant. The raw files are verified against the headline run's source hashes. Destination, fee, and market value stay out.
+
+<!-- BEGIN:context -->
+| Variant | Best model | CV log-MAE | Per fold | Selected by CV | Test MAE | Test log-MAE | Mean test log residual |
+| --- | --- | ---: | --- | --- | ---: | ---: | ---: |
+| headline+context | ridge(alpha=1.0) | 0.7652 | 0.696 / 0.764 / 0.836 |  | €11.41m | 0.722 | +0.377 |
+| headline+trend+context | ridge(alpha=10.0) | 0.7299 | 0.724 / 0.737 / 0.728 |  | €8.56m | 0.583 | -0.066 |
+| headline+price_level+context | ridge(alpha=1.0) | 0.7204 | 0.653 / 0.753 / 0.755 |  | €9.49m | 0.622 | +0.146 |
+| exposure+context | ridge(alpha=10.0) | 0.7622 | 0.715 / 0.751 / 0.821 |  | €11.01m | 0.697 | +0.334 |
+| exposure+trend+context | ridge(alpha=10.0) | 0.7268 | 0.730 / 0.738 / 0.712 |  | €8.61m | 0.581 | -0.055 |
+| **exposure+price_level+context** | ridge(alpha=0.1) | 0.7193 | 0.672 / 0.750 / 0.736 | yes | €9.19m | 0.612 | +0.141 |
+
+Selected by CV: **exposure+price_level+context** (ridge(alpha=0.1)), CV log-MAE 0.7193 against 0.7864 for the first-round follow-up. Coefficients per training SD: `team_points_per_game` +0.219, `europe_minutes` +0.152, `other_league_minutes` +0.146. CV with one context group removed from the selected variant: without europe 0.7029; without other league 0.7292; without team 0.7504. Paired bootstrap on test MAE, enriched minus headline −€2.01m (95% CI −€2.95m to −€1.12m); enriched minus first-round follow-up −€0.36m (95% CI −€1.11m to €0.37m). Rows with any European minutes: train 48%, test 43%; with other-league minutes: train 37%, test 41%.
+
+The headline's five worst misses under each model:
+
+| Player | Reported | Headline | Follow-up | Enriched | European min | Other-league min | Team pts/game |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Alexander Isak | €145.0m | €80.1m | €96.3m | €102.4m | 313 | 0 (0 G) | 1.70 |
+| Jhon Durán | €77.0m | €17.3m | €25.5m | €24.3m | 240 | 0 (0 G) | 1.58 |
+| Moussa Diaby | €60.0m | €13.6m | €17.4m | €37.3m | 1,079 | 2,717 (9 G) | 1.79 |
+| Luis Díaz | €70.0m | €24.8m | €35.7m | €57.1m | 1,073 | 0 (0 G) | 2.19 |
+| Pedro Neto | €60.0m | €14.8m | €19.3m | €14.8m | 0 | 0 (0 G) | 1.24 |
+<!-- END:context -->
+
+Reading: this is the biggest CV gain of anything tried here, and team strength carries most of it. Removing it costs the most, and a player's club's results say something performance totals do not. The CV gain mostly does not carry over to euros on the test set. The enriched model beats the headline by a margin larger than the bootstrap noise, but against the first-round follow-up the interval includes zero. The ablation also shows that European minutes add nothing once the other inputs are in (CV improves slightly without them). They stay in because the variant set was fixed before the ablation ran, and dropping them now would be one more round of selection. Among the worst misses, the new inputs help where the missing information was about football: Diaby (Bundesliga record) and Díaz (Liverpool's results and European minutes) move much closer. They do not help where it was about the buyer or the injury record. Durán's Saudi move barely changes, and Neto does not change at all. Isak moves up but stays well short.
+
+A second data source was also checked and not used: football-data.org's API, whose free tier only serves PL seasons from 2023/24 onward and has no per-player match data beyond a top-scorer list. Nothing from it can reach the 2014 to 2023 training cycles.
 
 ## Method
 
@@ -201,6 +274,8 @@ Market value beats both models comfortably. That is expected rather than embarra
 - [x] Source season metadata defines the two completed seasons and any in-progress prefix. See [`tests/test_features.py`](tests/test_features.py) for the summer gap and the extended 2019/20 season.
 - [x] The current-position fallback is flagged and reported with total, train, and test percentages (funnel section below).
 - [x] No destination-club, fee-derived, or market-value inputs. The pipeline rejects forbidden columns: [`features.assert_allowed_inputs`](src/transfer_value/features.py). The one exception is the follow-up's `league_price_level`, a trailing median of *other*, strictly earlier transfers' fees. It never includes the row's own fee, and it is not part of the headline model.
+- [x] The second-round context inputs (European and other-league minutes, team points) only count matches strictly before the transfer date. They come from the headline run's own raw files, verified by hash. See [`tests/test_followup.py`](tests/test_followup.py).
+- [x] Conformal widths come from training-window CV errors only; the test set never touches them.
 - [x] Joins use IDs only, and no transfer ID appears in both train and test. See [`tests/test_split.py`](tests/test_split.py).
 - [x] Scalers and encoders are fit inside each fold's training rows, through one `Pipeline`.
 - [x] Baselines use training labels only, including the position-median fallback. See [`tests/test_evaluate.py`](tests/test_evaluate.py).
@@ -306,7 +381,7 @@ uv run --locked python scripts/build_report.py --check
 
 ## Prediction CLI (demo only)
 
-`tvp predict` reuses the saved model and the same feature builder. It refuses dates the model could have seen in training and dates beyond source coverage. The default as-of date is the end of the 2025/26 season.
+`tvp predict` reuses the saved headline model and the same feature builder. It refuses dates the model could have seen in training and dates beyond source coverage. The default as-of date is the end of the 2025/26 season. After `tvp followup` has run, it also prints the headline model's 80% [training-set conformal interval](#how-wide-is-the-range-added-after-the-holdout). It checks that the interval was calibrated for the same run and model.
 
 ```text
 $ uv run --locked tvp predict --player "Cole Palmer"
@@ -314,14 +389,17 @@ Cole Palmer (id 568177) as of 2026-05-25
   position MF (historical_appearance), age 24
   lookback seasons 2024,2025: 5165 min, 25 G, 10 A
   hypothetical reported fee: €57.1m
-  Hypothetical estimate of a reported fee, not an observed fee or a valuation.
+  80% training-set conformal interval: €15.0m to €217.7m
+  model linear, run 751f64196525f1a9
+  Hypothetical estimate of a reported fee, not an observed fee or a valuation. The interval covers past transfers at its nominal rate on average; it is not a valuation range for this player.
 
 $ uv run --locked tvp predict --player "Bukayo Saka"
   ...
   hypothetical reported fee: €33.5m
+  80% training-set conformal interval: €8.8m to €127.8m
 ```
 
-The Saka number is the compression problem from the worst-misses section in one line. Treat these outputs as illustrations of the model's behavior, not estimates anyone should use.
+The Saka point estimate is the compression problem from the worst-misses section in one line. The interval is the honest version of the same output: this feature set can only place him somewhere between €9m and €128m. Treat these outputs as illustrations of the model's behavior, not estimates anyone should use, and not as valuations.
 
 ## What I would not claim
 
@@ -333,6 +411,8 @@ This study does **not** establish:
 - Strictly historical position for the flagged proxy rows.
 - A causal explanation for any residual or coefficient sign.
 - That the model is better than the baselines in general. The bootstrap describes this holdout only, not future seasons or retraining.
+- That a conformal interval is a range for a particular player. Its coverage holds on average over transfers like the calibration ones.
+- That the second-round context inputs are a validated improvement. They were chosen after two looks at the test set, and their test gain over the first follow-up is within noise.
 
 ## Limitations
 
@@ -342,8 +422,8 @@ This study does **not** establish:
 - **Retrospective position** for proxy rows (under 1% here).
 - **Nominal EUR** with no inflation adjustment in the headline model, and the drift is visible in the residuals. The follow-up's price-level term addresses this, but only post hoc.
 - **Transfer window:** in-season (mostly January) transfers are over-predicted relative to summer ones, and normalizing for the extra half season does not close the gap.
-- **Elite outliers:** the linear model compresses the top of the market. That is a finding, not a bug to hide.
-- **PL-only lookback:** a player's record in other leagues is invisible, which hurts recent arrivals (Diaby).
+- **Elite outliers:** the linear model compresses the top of the market. That is a finding, not a bug to hide. Gradient boosting, with or without monotonic constraints, compresses it at least as much.
+- **PL-only lookback:** in the headline model, a player's record in other leagues is invisible, which hurts recent arrivals (Diaby). The second follow-up round adds other-league and European minutes, but only post hoc.
 - **Coverage drift:** transfer histories come from each player's latest profile scrape, so early cycles are sparse (see rows per cycle in the funnel).
 - **Incomplete final window:** the snapshot stops in July 2026, so the 2026 summer window is excluded rather than half-counted.
 - **Possible loans or buy-backs** among positive fees are flagged in the funnel section and kept.
@@ -371,7 +451,7 @@ Commands: the quickstart above. Every published number, table, and figure comes 
 
 ## How this was built
 
-The spec ([SPEC.md](SPEC.md)) and plan ([PLAN.md](PLAN.md)) were written and reviewed by hand over several rounds. The implementation, tests, and this README were then written by an AI coding agent (Factory's Droid) in one working session, following that plan, with the owner reviewing results and asking for changes. That is why the first three commits land within seven minutes of each other: the work was built and checked locally first, then committed in three logical chunks. The commit timestamps show when the code was committed, not how long it took to build. The follow-up section came from the owner's review of the first published run.
+The spec ([SPEC.md](SPEC.md)) and plan ([PLAN.md](PLAN.md)) were written and reviewed by hand over several rounds. The implementation, tests, and this README were then written by an AI coding agent (Factory's Droid) in one working session, following that plan, with the owner reviewing results and asking for changes. That is why the first three commits land within seven minutes of each other: the work was built and checked locally first, then committed in three logical chunks. The commit timestamps show when the code was committed, not how long it took to build. The follow-up section came from the owner's review of the first published run. Its second round, the conformal intervals, and the boosting check came from a later review.
 
 What keeps this honest regardless of who typed it: pinned source hashes, a pinned config, one run ID behind every published number, `build_report.py --check` in CI, and a fixture test suite that checks the leakage rules directly.
 

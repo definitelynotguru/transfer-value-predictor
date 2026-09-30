@@ -131,7 +131,13 @@ def predict(
         f"  lookback seasons {r['lookback_seasons']}: {r['lookback_minutes']} min, "
         f"{r['goals']} G, {r['assists']} A\n"
         f"  hypothetical reported fee: €{r['predicted_reported_fee_eur'] / 1e6:.1f}m\n"
-        f"  model {r['model']}, run {r['run_id']}\n  {r['note']}"
+        + (
+            f"  {r['interval_level']:.0%} training-set conformal interval: "
+            f"€{r['interval_lower_eur'] / 1e6:.1f}m to €{r['interval_upper_eur'] / 1e6:.1f}m\n"
+            if r.get("interval_level") is not None
+            else f"  interval: unavailable ({r['interval_status']})\n"
+        )
+        + f"  model {r['model']}, run {r['run_id']}\n  {r['note']}"
     )
 
 
@@ -154,12 +160,25 @@ def followup(
             f" {star} {name:<24} CV log-MAE {v['cv_mean_log_mae']:.4f}  "
             f"test MAE €{v['test']['mae_eur'] / 1e6:6.2f}m"
         )
+    for name, v in r["context_round"]["variants"].items():
+        star = "*" if v["selected_by_cv"] else " "
+        typer.echo(
+            f" {star} {name:<24} CV log-MAE {v['cv_mean_log_mae']:.4f}  "
+            f"test MAE €{v['test']['mae_eur'] / 1e6:6.2f}m"
+        )
     mv = r["market_value_comparator"]
     typer.echo(
         f"market value matched {mv['matched_rows']}/{mv['test_rows']} test rows: MAE "
         f"€{mv['methods']['market_value']['mae_eur'] / 1e6:.2f}m vs headline "
         f"€{mv['methods']['headline']['mae_eur'] / 1e6:.2f}m"
     )
+    conf = r["conformal"]
+    for key in ("headline", "followup", "enriched"):
+        for lv, s in conf[key]["levels"].items():
+            typer.echo(
+                f"conformal {key:<9} {float(lv):.0%}: ×/÷{s['factor']:.1f}, "
+                f"test coverage {s['test']['coverage']:.0%}"
+            )
     typer.echo("followup ok (* = selected by CV; not a headline result)")
 
 

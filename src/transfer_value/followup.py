@@ -6,6 +6,10 @@ selection still uses only chronological CV inside the training window; the test 
 once per variant afterwards and reported as a labelled follow-up.
 
 Transfermarkt market value enters only as a comparison row. It is never a model input.
+
+A second round, added after the first follow-up had also been scored, adds as-of context
+inputs from the raw all-competition tables, split-conformal intervals, and a gradient boosting
+check. The first-round variants and their selection are unchanged by it.
 """
 
 from __future__ import annotations
@@ -18,7 +22,15 @@ import numpy as np
 import pandas as pd
 import yaml
 
+from transfer_value import boosting, conformal
 from transfer_value.config import Config, config_hash, load_config
+from transfer_value.context import (
+    CONTEXT_FEATURES,
+    CONTEXT_GROUPS,
+    RAW_CONTEXT_FILES,
+    context_columns,
+    load_raw_context,
+)
 from transfer_value.dataset import load_interim
 from transfer_value.evaluate import metrics, paired_cluster_bootstrap, retransform
 from transfer_value.features import assert_allowed_inputs, model_inputs
@@ -74,7 +86,15 @@ def load_followup_config(path: str | Path) -> FollowupConfig:
     if not p.exists():
         raise FileNotFoundError(f"follow-up config not found: {p}")
     raw = yaml.safe_load(p.read_text()) or {}
-    for key in ("headline_config", "source", "data", "price_level", "market_value"):
+    for key in (
+        "headline_config",
+        "source",
+        "data",
+        "price_level",
+        "market_value",
+        "context",
+        "conformal",
+    ):
         if key not in raw:
             raise ValueError(f"follow-up config missing {key}")
     return FollowupConfig(raw=raw, root=p.resolve().parent)
@@ -88,6 +108,17 @@ def variants(numeric: list[str]) -> list[dict]:
         for term, extra in TIME_TERMS.items():
             name = base if term == "none" else f"{base}+{term}"
             out.append({"name": name, "numeric": cols + extra})
+    for v in out:
+        assert_allowed_inputs(v["numeric"])
+    return out
+
+
+def context_variants(first_round: list[dict]) -> list[dict]:
+    """Each first-round input set plus the context inputs, in the same order."""
+    out = [
+        {"name": f"{v['name']}+context", "numeric": v["numeric"] + CONTEXT_FEATURES}
+        for v in first_round
+    ]
     for v in out:
         assert_allowed_inputs(v["numeric"])
     return out
@@ -267,6 +298,104 @@ def _by_window(frame: pd.DataFrame, log_res: dict[str, pd.Series], abs_err=None)
     return out
 
 
+def _cv_variants(train, folds, vs, categorical, rs) -> list[dict]:
+    rows = []
+    for vi, v in enumerate(vs):
+        results = cross_validate(train, folds, v["numeric"], categorical, rs)
+        best = min((r for r in results if r["eligible"]), key=rank_key)
+        rows.append({"variant": v["name"], "variant_order": vi, "best": best, "all": results})
+    return rows
+
+
+def _pick(cv_rows: list[dict]) -> dict:
+    def key(row):
+        m, s, order = rank_key(row["best"])
+        return (m, s, row["variant_order"], order)
+
+    return min(cv_rows, key=key)
+
+
+def _score_variants(cv_rows, vs, chosen, categorical, train, test, rs) -> dict:
+    y = test["fee_eur"].to_numpy(dtype=float)
+    out = {"per_variant": {}, "log": {}, "eur": {}, "in_sample": {}, "pipes": {}, "cand": {}}
+    for row, v in zip(cv_rows, vs, strict=True):
+        c = Candidate(row["best"]["family"], row["best"]["params"])
+        pipe, pl = _fit_predict(c, v["numeric"], categorical, train, test, rs)
+        eur, clamped = retransform(pl)
+        out["log"][v["name"]], out["eur"][v["name"]] = pl, eur
+        out["pipes"][v["name"]], out["cand"][v["name"]] = pipe, c
+        out["in_sample"][v["name"]] = train["fee_log1p"] - pipe.predict(
+            train[v["numeric"] + categorical]
+        )
+        out["per_variant"][v["name"]] = {
+            "model": c.name,
+            "numeric_features": v["numeric"],
+            "cv_mean_log_mae": row["best"]["mean_log_mae"],
+            "cv_std_log_mae": row["best"]["std_log_mae"],
+            "cv_fold_log_mae": row["best"]["fold_log_mae"],
+            "selected_by_cv": row is chosen,
+            "clamped_at_zero": clamped,
+            "test": metrics(y, eur, pl),
+            "test_mean_log_residual": float(np.mean(np.log1p(y) - pl)),
+        }
+    return out
+
+
+def _context_frame(fcfg: FollowupConfig, cfg: Config, df, tables, source_hashes) -> pd.DataFrame:
+    names = list(RAW_CONTEXT_FILES)
+    digests = verify_raw_files(cfg.raw_dir, names)
+    for n, d in digests.items():
+        if source_hashes.get(n) != d:
+            raise RuntimeError(f"{n} differs from the bytes behind the headline run")
+    raw = load_raw_context(cfg.raw_dir, set(df["player_id"]))
+    return context_columns(
+        df,
+        tables["seasons"],
+        tables["appearances"],
+        raw,
+        cfg.competition_ids,
+        list(fcfg.raw["context"]["europe_competitions"]),
+    )
+
+
+def _worst_misses(test: pd.DataFrame, pred_eur: np.ndarray, n: int = 5) -> list[int]:
+    """Row positions of the n largest absolute euro errors, ties broken by transfer_id."""
+    err = pd.DataFrame(
+        {
+            "abs": np.abs(test["fee_eur"].to_numpy(dtype=float) - pred_eur),
+            "tid": test["transfer_id"].to_numpy(),
+            "pos": np.arange(len(test)),
+        }
+    )
+    return err.sort_values(["abs", "tid"], ascending=[False, True])["pos"].head(n).tolist()
+
+
+def _boosting(train, test, folds, numeric, categorical, head_log, rs) -> dict:
+    y = test["fee_eur"].to_numpy(dtype=float)
+    out = {
+        "note": "Post-holdout check on the headline inputs. Test columns are descriptive only.",
+        "learning_rate": boosting.LEARNING_RATE,
+        "l2_regularization": boosting.L2,
+        "monotone_constraints": boosting.MONOTONE,
+        "grid": boosting.grid(),
+        "headline_compression": boosting.compression(y, head_log),
+    }
+    for mono in (False, True):
+        best, _ = boosting.cross_validate_gbm(train, folds, numeric, categorical, mono, rs)
+        pipe = boosting.make_gbm(best["params"], numeric, categorical, mono, rs)
+        pipe.fit(train[numeric + categorical], train["fee_log1p"].to_numpy())
+        pl = pipe.predict(test[numeric + categorical])
+        eur, _ = retransform(pl)
+        out["gbm_monotone" if mono else "gbm"] = {
+            "model": best["name"],
+            "cv_mean_log_mae": best["mean_log_mae"],
+            "cv_fold_log_mae": best["fold_log_mae"],
+            "test": metrics(y, eur, pl),
+            "compression": boosting.compression(y, pl),
+        }
+    return out
+
+
 def run_followup(fcfg: FollowupConfig) -> dict:
     cfg = fcfg.headline
     cfg.require_pinned()
@@ -291,6 +420,7 @@ def run_followup(fcfg: FollowupConfig) -> dict:
         int(pl_cfg["min_transfers"]),
     )
     df = df.merge(level, on="transfer_date", how="left", validate="many_to_one")
+    df = _context_frame(fcfg, cfg, df, tables, head_manifest["source_hashes"])
 
     rs = int(cfg.runtime["random_state"])
     numeric, categorical = model_inputs(bool(cfg.study["include_cards"]))
@@ -302,45 +432,19 @@ def run_followup(fcfg: FollowupConfig) -> dict:
     )
 
     vs = variants(numeric)
-    cv_rows = []
-    for vi, v in enumerate(vs):
-        results = [r for r in cross_validate(train, folds, v["numeric"], categorical, rs)]
-        best = min((r for r in results if r["eligible"]), key=rank_key)
-        cv_rows.append({"variant": v["name"], "variant_order": vi, "best": best, "all": results})
-
+    cv_rows = _cv_variants(train, folds, vs, categorical, rs)
     head_row = cv_rows[0]["best"]
     if head_row["name"] != head_cv["selected"] or not np.isclose(
         head_row["mean_log_mae"],
         next(c["mean_log_mae"] for c in head_cv["candidates"] if c["name"] == head_cv["selected"]),
     ):
         raise AssertionError("headline variant does not reproduce the headline CV selection")
-
-    def overall_key(row):
-        m, s, order = rank_key(row["best"])
-        return (m, s, row["variant_order"], order)
-
-    chosen = min(cv_rows, key=overall_key)
+    chosen = _pick(cv_rows)
 
     y = test["fee_eur"].to_numpy(dtype=float)
-    y_log_train = train["fee_log1p"]
-    per_variant, preds_log, preds_eur, in_sample, pipes = {}, {}, {}, {}, {}
-    for row, v in zip(cv_rows, vs, strict=True):
-        c = Candidate(row["best"]["family"], row["best"]["params"])
-        pipe, pl = _fit_predict(c, v["numeric"], categorical, train, test, rs)
-        eur, clamped = retransform(pl)
-        preds_log[v["name"]], preds_eur[v["name"]], pipes[v["name"]] = pl, eur, pipe
-        in_sample[v["name"]] = y_log_train - pipe.predict(train[v["numeric"] + categorical])
-        per_variant[v["name"]] = {
-            "model": c.name,
-            "numeric_features": v["numeric"],
-            "cv_mean_log_mae": row["best"]["mean_log_mae"],
-            "cv_std_log_mae": row["best"]["std_log_mae"],
-            "cv_fold_log_mae": row["best"]["fold_log_mae"],
-            "selected_by_cv": row is chosen,
-            "clamped_at_zero": clamped,
-            "test": metrics(y, eur, pl),
-            "test_mean_log_residual": float(np.mean(np.log1p(y) - pl)),
-        }
+    r1 = _score_variants(cv_rows, vs, chosen, categorical, train, test, rs)
+    per_variant, preds_log, preds_eur = r1["per_variant"], r1["log"], r1["eur"]
+    in_sample, pipes = r1["in_sample"], r1["pipes"]
 
     hp = head_pred.set_index("transfer_id").loc[test["transfer_id"]]
     if not np.allclose(hp["prediction_log"].to_numpy(), preds_log["headline"]):
@@ -361,12 +465,139 @@ def run_followup(fcfg: FollowupConfig) -> dict:
         test["player_id"], ae, "followup", *boot_args, names=("follow-up", "headline")
     )
 
+    # Round 2: context inputs. Selection again uses training-window CV only.
+    vs2 = context_variants(vs)
+    cv_rows2 = _cv_variants(train, folds, vs2, categorical, rs)
+    chosen2 = _pick(cv_rows2)
+    r2 = _score_variants(cv_rows2, vs2, chosen2, categorical, train, test, rs)
+    sel2 = chosen2["variant"]
+    sel2_numeric = next(v["numeric"] for v in vs2 if v["name"] == sel2)
+    ablation = {}
+    for group, cols in CONTEXT_GROUPS.items():
+        kept = [c for c in sel2_numeric if c not in cols]
+        best = min(
+            (r for r in cross_validate(train, folds, kept, categorical, rs) if r["eligible"]),
+            key=rank_key,
+        )
+        ablation[group] = {
+            "dropped": cols,
+            "model": best["name"],
+            "cv_mean_log_mae": best["mean_log_mae"],
+        }
+    ae["enriched"] = np.abs(y - r2["eur"][sel2])
+    boot2 = paired_cluster_bootstrap(
+        test["player_id"],
+        {k: ae[k] for k in ("enriched", "headline", "followup")},
+        "enriched",
+        *boot_args,
+        names=("enriched", "other"),
+    )
+    worst = _worst_misses(test, preds_eur["headline"])
+    worst_rows = [
+        {
+            "transfer_id": test["transfer_id"].iat[i],
+            "name": test["name"].iat[i],
+            "fee_eur": float(y[i]),
+            "headline_eur": float(preds_eur["headline"][i]),
+            "followup_eur": float(preds_eur[sel][i]),
+            "enriched_eur": float(r2["eur"][sel2][i]),
+            **{c: float(test[c].iat[i]) for c in CONTEXT_FEATURES},
+        }
+        for i in worst
+    ]
+    context_round = {
+        "note": "Second post-holdout round, designed after both the headline and the first "
+        "follow-up had been scored. Variant selection used training-window CV only; test "
+        "columns for non-selected variants are descriptive only.",
+        "definitions": {
+            "europe_minutes": "minutes in "
+            + ", ".join(fcfg.raw["context"]["europe_competitions"])
+            + " inside the lookback date window",
+            "other_league_minutes": "minutes in first-tier domestic leagues other than the study "
+            "league inside the lookback date window",
+            "other_league_goals": "goals in those leagues inside the same window",
+            "team_points_per_game": "mean league points the player's club took in the lookback "
+            "PL matches he played",
+            "lookback_date_window": "[first match of the earlier completed lookback season, D)",
+        },
+        "variants": r2["per_variant"],
+        "variant_order": [v["name"] for v in vs2],
+        "selected_variant": sel2,
+        "selected_model": r2["per_variant"][sel2]["model"],
+        "first_round_selected_cv_log_mae": per_variant[sel]["cv_mean_log_mae"],
+        "ablation_cv": ablation,
+        "vs_headline_and_followup": boot2,
+        "share_with_europe_minutes": {
+            "train": float((train["europe_minutes"] > 0).mean()),
+            "test": float((test["europe_minutes"] > 0).mean()),
+        },
+        "share_with_other_league_minutes": {
+            "train": float((train["other_league_minutes"] > 0).mean()),
+            "test": float((test["other_league_minutes"] > 0).mean()),
+        },
+        "headline_worst_misses": worst_rows,
+        "selected_coefficients": coefficient_table(
+            r2["pipes"][sel2], r2["per_variant"][sel2]["model"], True
+        ).to_dict(orient="records"),
+    }
+
+    # Split-conformal intervals from out-of-fold CV residuals.
+    conf_cfg = fcfg.raw["conformal"]
+    levels = [float(x) for x in conf_cfg["levels"]]
+    predict_level = float(conf_cfg["predict_level"])
+    if predict_level not in levels:
+        raise ValueError("conformal.predict_level must be one of conformal.levels")
+    conf_models = {
+        "headline": ("headline", r1, vs[0]["numeric"]),
+        "followup": (sel, r1, next(v["numeric"] for v in vs if v["name"] == sel)),
+        "enriched": (sel2, r2, sel2_numeric),
+    }
+    conf_out, bounds = {}, {}
+    for key, (vname, rr, cols) in conf_models.items():
+        pv = rr["per_variant"][vname]
+        scores, fold_mae = conformal.oof_residuals(
+            train, folds, cols, categorical, rr["cand"][vname], rs
+        )
+        if not np.allclose(fold_mae, pv["cv_fold_log_mae"]):
+            raise AssertionError(f"{key}: out-of-fold residuals do not reproduce CV")
+        conf_out[key] = {
+            "variant": vname,
+            "model": pv["model"],
+            "calibration_mean_residual": float(np.mean(scores)),
+            "levels": {
+                f"{lv:.2f}": conformal.summarize(np.abs(scores), test, rr["log"][vname], lv)
+                for lv in levels
+            },
+        }
+        for lv in levels:
+            q = conf_out[key]["levels"][f"{lv:.2f}"]["q_log"]
+            bounds[(key, lv)] = conformal.interval_eur(rr["log"][vname], q)
+    hq = conf_out["headline"]["levels"][f"{predict_level:.2f}"]["q_log"]
+    lo, hi = conformal.interval_eur(preds_log["headline"], hq)
+    conf_out["headline_worst_misses"] = [
+        {
+            "name": test["name"].iat[i],
+            "fee_eur": float(y[i]),
+            "lower_eur": float(lo[i]),
+            "upper_eur": float(hi[i]),
+            "covered": bool(lo[i] <= y[i] <= hi[i]),
+        }
+        for i in worst
+    ]
+    conf_out["predict_level"] = predict_level
+    conf_out["method"] = (
+        "split conformal on |log1p(fee) - prediction| from the expanding CV folds' validation "
+        "cycles; interval = expm1(prediction -/+ q), lower bound clamped at zero"
+    )
+
+    boost = _boosting(train, test, folds, numeric, categorical, preds_log["headline"], rs)
+
     idx_test = test.index
     log_res_test = {
         "headline": pd.Series(np.log1p(y) - preds_log["headline"], index=idx_test),
         "followup": pd.Series(np.log1p(y) - preds_log[sel], index=idx_test),
     }
-    abs_err_test = {k: pd.Series(v, index=idx_test) for k, v in ae.items()}
+    abs_err_test = {k: pd.Series(ae[k], index=idx_test) for k in ("followup", "headline")}
     window = {
         "definition": "in_season: a league season was in progress at the transfer date, so the "
         "lookback includes a partial ongoing season on top of two completed ones",
@@ -387,6 +618,7 @@ def run_followup(fcfg: FollowupConfig) -> dict:
     comp_preds = {
         "headline": preds_eur["headline"][matched],
         "followup": preds_eur[sel][matched],
+        "enriched": r2["eur"][sel2][matched],
         "train_median": np.full(matched.sum(), train_median),
         "market_value": mv["market_value_eur"].to_numpy(dtype=float)[matched],
     }
@@ -401,7 +633,7 @@ def run_followup(fcfg: FollowupConfig) -> dict:
             *boot_args,
             names=(ref, "market value"),
         )
-        for ref in ("headline", "followup")
+        for ref in ("headline", "followup", "enriched")
     }
     ages = mv["valuation_age_days"].to_numpy()[matched]
     market_value = {
@@ -428,10 +660,31 @@ def run_followup(fcfg: FollowupConfig) -> dict:
     out_pred["fee_eur"] = out_pred["fee_eur"].astype(float)
     for k in ("headline", sel):
         out_pred[f"pred_eur__{k}"] = preds_eur[k]
+    out_pred[f"pred_eur__{sel2}"] = r2["eur"][sel2]
+    for (key, lv), (b_lo, b_hi) in bounds.items():
+        out_pred[f"lower_eur__{key}__{lv:.2f}"] = b_lo
+        out_pred[f"upper_eur__{key}__{lv:.2f}"] = b_hi
     out_pred["market_value_eur"] = mv["market_value_eur"].to_numpy()
     out_pred["valuation_age_days"] = mv["valuation_age_days"].to_numpy()
     fcfg.output_dir.mkdir(parents=True, exist_ok=True)
     write_parquet(out_pred, fcfg.output_dir / "test_predictions.parquet")
+
+    hl = conf_out["headline"]["levels"][f"{predict_level:.2f}"]
+    write_json(
+        {
+            "note": "Training-set conformal interval for tvp predict. Marginal coverage over "
+            "transfers, not a valuation range for any one player.",
+            "headline_run_id": head_manifest["run_id"],
+            "features_fingerprint": head_manifest["features_fingerprint"],
+            "model": per_variant["headline"]["model"],
+            "level": predict_level,
+            "q_log": hl["q_log"],
+            "factor": hl["factor"],
+            "calibration_rows": hl["calibration_rows"],
+            "followup_config_hash": fcfg.hash(),
+        },
+        fcfg.output_dir / "headline_interval.json",
+    )
 
     result = {
         "note": "Follow-up designed after the headline holdout was scored. Not a headline "
@@ -458,6 +711,9 @@ def run_followup(fcfg: FollowupConfig) -> dict:
         "selected_coefficients": coefs.to_dict(orient="records"),
         "window_diagnostic": window,
         "market_value_comparator": market_value,
+        "context_round": context_round,
+        "conformal": conf_out,
+        "boosting": boost,
     }
     write_json(result, fcfg.output_dir / "followup.json")
     return result

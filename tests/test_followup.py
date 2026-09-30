@@ -3,15 +3,20 @@
 import json
 import math
 
+import numpy as np
 import pandas as pd
 import pytest
 from typer.testing import CliRunner
 
 from conftest import make_env
+from transfer_value import boosting
 from transfer_value.cli import app
+from transfer_value.conformal import conformal_quantile, coverage, interval_eur
+from transfer_value.context import CONTEXT_FEATURES, context_columns, load_raw_context
 from transfer_value.features import model_inputs
 from transfer_value.followup import (
     EXPOSURE_FEATURES,
+    context_variants,
     exposure_columns,
     league_price_level,
     market_value_asof,
@@ -107,6 +112,65 @@ def test_variants_start_with_headline_and_never_use_market_value():
     assert all("market_value" not in c for v in vs for c in v["numeric"])
 
 
+def test_context_inputs_only_count_the_lookback_window_before_d(cfg, assembled, tables):
+    feats = assembled["features"]
+    raw = load_raw_context(cfg.raw_dir, set(feats["player_id"]))
+    df = context_columns(
+        feats, tables["seasons"], tables["appearances"], raw, ["GB1"], ["CL", "EL", "UCOL"]
+    ).set_index("player_id")
+    alex = df.loc["101"]  # transfer 2023-07-15, window from 2021-08-14
+    assert alex["lookback_window_start"] == _ts("2021-08-14")
+    assert alex["europe_minutes"] == 80  # the transfer-day CL match is excluded
+    assert alex["other_league_minutes"] == 70  # the pre-window Bundesliga match is excluded
+    assert alex["other_league_goals"] == 1  # FA Cup goals count in neither group
+    assert alex["team_points_per_game"] == 3.0  # club 1 won every fixture league game
+    others = df.drop(index="101")
+    assert (others[["europe_minutes", "other_league_minutes"]] == 0).all().all()
+    assert np.isfinite(df[CONTEXT_FEATURES].to_numpy()).all()
+
+
+def test_context_variants_extend_every_first_round_set():
+    numeric, _ = model_inputs(False)
+    first = variants(numeric)
+    second = context_variants(first)
+    assert [v["name"] for v in second] == [f"{v['name']}+context" for v in first]
+    for a, b in zip(first, second, strict=True):
+        assert b["numeric"] == a["numeric"] + CONTEXT_FEATURES
+
+
+def test_conformal_quantile_interval_and_coverage():
+    scores = np.arange(1.0, 10.0)  # n = 9
+    assert conformal_quantile(scores, 0.8) == 8.0  # ceil(10 * 0.8) = 8th smallest
+    assert conformal_quantile(scores, 0.95) == math.inf  # ceil(9.5) = 10 > n
+    lo, hi = interval_eur(np.log1p(np.array([10.0])), math.log(2))
+    assert hi[0] == pytest.approx(21.0) and lo[0] == pytest.approx(4.5)  # (1 + fee) ×/÷ 2
+    assert interval_eur(np.array([0.1]), 5.0)[0][0] == 0.0  # lower end clamped at zero
+    c = coverage(np.array([0.0, 1.0, -1.0, 3.0]), np.zeros(4), 1.0)
+    assert c == {
+        "rows": 4,
+        "coverage": 0.75,
+        "share_above_upper": 0.25,
+        "share_below_lower": 0.0,
+    }
+
+
+def test_monotone_boosting_respects_signs():
+    numeric, categorical = model_inputs(False)
+    rng = np.random.default_rng(0)
+    n = 200
+    X = pd.DataFrame({c: rng.uniform(0, 10, n) for c in numeric})
+    X["position"] = rng.choice(["GK", "DF", "MF", "FW"], n)
+    y = 15 + 0.3 * X["minutes"] - 0.2 * X["age"] + rng.normal(0, 1, n)
+    params = boosting.grid()[0]
+    pipe = boosting.make_gbm(params, numeric, categorical, True, 42).fit(X, y)
+    probe = pd.concat([X.iloc[[0]]] * 11, ignore_index=True)
+    probe["minutes"] = np.linspace(0, 10, 11)
+    assert (np.diff(pipe.predict(probe)) >= 0).all()
+    probe["age"] = np.linspace(0, 10, 11)
+    probe["minutes"] = 5.0
+    assert (np.diff(pipe.predict(probe)) <= 0).all()
+
+
 def test_followup_cli_leaves_headline_untouched(tmp_path_factory):
     root = tmp_path_factory.mktemp("followup")
     cfg = str(make_env(root))
@@ -134,6 +198,26 @@ def test_followup_cli_leaves_headline_untouched(tmp_path_factory):
     assert mv["status_counts"].get("stale") == 1  # Alex Example: only a stale prior value
     assert mv["status_counts"].get("no_prior_valuation") == 1  # Proxy Position
     assert mv["matched_rows"] == mv["test_rows"] - 2
+    assert "enriched" in mv["methods"]
+
+    ctx = out["context_round"]
+    assert sum(v["selected_by_cv"] for v in ctx["variants"].values()) == 1
+    assert ctx["selected_variant"].endswith("+context")
+    conf = out["conformal"]
+    for key in ("headline", "followup", "enriched"):
+        assert set(conf[key]["levels"]) == {"0.80", "0.90"}
+    h80 = conf["headline"]["levels"]["0.80"]
+    assert h80["calibration_rows"] == sum(
+        len(f["validation_transfer_ids"])
+        for f in json.loads((art / "cv_results.json").read_text())["folds"]
+    )
+    assert {"gbm", "gbm_monotone"} <= set(out["boosting"])
+
+    iv = json.loads((art / "followup" / "headline_interval.json").read_text())
+    assert iv["level"] == 0.8 and iv["q_log"] == h80["q_log"]
+    r = runner.invoke(app, ["predict", "--player", "Alex Example", "--config", cfg])
+    assert r.exit_code == 0, r.output
+    assert "80% training-set conformal interval" in r.output
 
     again = runner.invoke(app, ["followup", "--config", fup])
     assert again.exit_code == 0
