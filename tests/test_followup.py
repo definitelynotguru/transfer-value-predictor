@@ -10,6 +10,7 @@ from typer.testing import CliRunner
 
 from conftest import make_env
 from transfer_value import boosting
+from transfer_value.charts import CHARTS
 from transfer_value.cli import app
 from transfer_value.conformal import conformal_quantile, coverage, interval_eur
 from transfer_value.context import CONTEXT_FEATURES, context_columns, load_raw_context
@@ -222,3 +223,16 @@ def test_followup_cli_leaves_headline_untouched(tmp_path_factory):
     again = runner.invoke(app, ["followup", "--config", fup])
     assert again.exit_code == 0
     assert json.loads((art / "followup" / "followup.json").read_text()) == out
+
+    r = runner.invoke(app, ["charts", "--config", fup])
+    assert r.exit_code == 0, r.output + str(r.exception)
+    manifest = json.loads((art / "charts" / "manifest.json").read_text())
+    assert manifest["followup_sha256"] == sha256_file(art / "followup" / "followup.json")
+    assert set(manifest["files"]) == set(CHARTS)
+    assert {n: sha256_file(art / "charts" / n) for n in CHARTS} == manifest["files"]
+    assert runner.invoke(app, ["charts", "--config", fup]).exit_code == 0
+    assert json.loads((art / "charts" / "manifest.json").read_text()) == manifest
+
+    (art / "metrics.json").write_text("{}")
+    r = runner.invoke(app, ["charts", "--config", fup])
+    assert r.exit_code == 1 and "does not match the headline manifest" in r.output

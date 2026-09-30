@@ -1,0 +1,14 @@
+{
+  "files": {
+    "01_predicted_vs_reported.png": "11eaab2447d95e4a4de95239c1b38244fa4b84c70544342873c00bcd7d218ba1",
+    "02_residual_structure.png": "ff254cd3dc2faa0954164c761bc97c83100054f98b9d91b120715e1542d06332",
+    "03_fee_drift.png": "aca23d82c06a18b7dbae567bf3a3eb01484ae42ca799627ed6dbc99d25d3d54c",
+    "04_coefficients.png": "1cf6f8f1cfd4a326942904251c91705243d5cc62177b7c3378eedccefcb99165",
+    "05_model_comparison.png": "67c80ba7142c19ee7d79f55cfa584d489ec9377edcc68f16333492ffcb1d84c2",
+    "06_interval_coverage.png": "8bb86f0ddf2141cd3660235f7c984fe81275418c8843b4fdaa3ad68eb859bbfb",
+    "07_biggest_fees_intervals.png": "23c3b01dfe0e43d790ee2a75bd47fe1811becc8e010fc348f015318c36f9f5b1",
+    "08_worst_misses_by_model.png": "08372405028d7f975b14a07f4c46d5c4c9ba262c2d4bf145f2aad590dea59a6b"
+  },
+  "followup_sha256": "f7a0be30118b91c64fc8d24b7fdcfd026bad97205a1002923aa9a4610bd4f65b",
+  "headline_run_id": "751f64196525f1a9"
+}

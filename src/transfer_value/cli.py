@@ -183,6 +183,23 @@ def followup(
 
 
 @app.command()
+def charts(
+    config: Annotated[Path, typer.Option("--config", help="Path to followup.yaml")] = Path(
+        "followup.yaml"
+    ),
+) -> None:
+    """Report charts from the verified headline run and follow-up outputs. Fits nothing."""
+    from transfer_value.charts import run_charts
+    from transfer_value.followup import load_followup_config
+
+    try:
+        r = run_charts(load_followup_config(config))
+    except Exception as exc:
+        _fail(exc)
+    typer.echo(f"charts ok: {len(r['files'])} charts in {r['output_dir']}")
+
+
+@app.command()
 def pipeline(config: ConfigOpt = Path("config.yaml")) -> None:
     """feasibility → ingest → build-features → train → evaluate. Never downloads."""
     feasibility(config, None)

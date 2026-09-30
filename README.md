@@ -61,19 +61,27 @@ Folds: cycle 2021 (276 train / 49 validation), cycle 2022 (325 train / 70 valida
 
 Model selection used log-MAE; the headline is euro MAE on the holdout. These are different objectives, and minimizing one does not minimize the other.
 
-## Plots
+## Charts
 
-![Predicted vs reported fee](docs/results/figures/predicted_vs_actual.png)
+These charts are drawn by `tvp charts` from the verified headline run and the follow-up outputs. That stage fits nothing and only reads files whose hashes it checks. The run's original evaluation figures are unchanged in [`docs/results/figures/`](docs/results/figures/). The shaded interval in the first two charts comes from the [conformal section](#how-wide-is-the-range-added-after-the-holdout), which was added after the holdout. Everything else in them is the pre-registered headline model.
 
-Log-log axes so the full range, including the €145m outlier, is visible. Points above the dashed `y = x` line are under-predictions. Most of the cloud sits above the line, and the vertical spread at any predicted value is wide: a €10m prediction covers reported fees from under €1m to over €40m.
+![The headline model ranks transfers sensibly, but aims low](docs/results/charts/01_predicted_vs_reported.png)
 
-![Residuals vs predicted](docs/results/figures/residuals_vs_predicted.png)
+**How to read it.** Each dot is one of the 214 test transfers, placed by what the headline model predicted (across) and what was reported (up). Both axes are log scales, so equal distances mean equal ratios, and a €1m miss on a €2m player looks as big as a €50m miss on a €100m one. Dots on the dashed diagonal were predicted exactly. Dots above it were under-predicted.
 
-Residual = reported − predicted, in euros. Positive means the model under-predicted. Errors fan out as predictions grow, which is what a log-scale model looks like in euro space.
+**What it shows.** The cloud rises with the diagonal, so the model gets the order roughly right: players it rates higher do tend to cost more. But the cloud sits above the line (70% of transfers are under-predicted), and its vertical spread is wide. The blue band is the 80% interval, the prediction multiplied or divided by 3.8. It contains 85% of the dots, and most of the dots outside it sit above it. The numbered points are the five worst euro misses, all forwards and all well above the band's centre.
 
-![Residual distribution](docs/results/figures/residual_distribution.png)
+![Misses are multiplicative, lean high, and shrink as prices rise](docs/results/charts/02_residual_structure.png)
 
-The distribution is centered above zero with a long right tail. The model's misses are not symmetric noise.
+**How to read it.** The vertical axis is the reported fee as a multiple of the prediction: "×2" means the fee was twice the prediction, "÷2" half. The left panel splits the test set into six equal-size bands by predicted fee. For each band, the red dot is the median miss and the red bar covers the middle half of the misses. The middle panel is the same misses as a histogram. The right panel asks how often the fixed-width 80% interval contained the fee within each quarter of the predicted-fee range.
+
+**What it shows.** Three things. First, every band's median sits above "same", so the lean toward under-prediction holds at every price, not just for the stars. Second, the misses get tighter as the prediction rises: the middle half of the cheapest band spans a factor of about 5.6 (1.72 on the log scale), the most expensive about 1.7 (0.51). Cheap transfers are noisy, and expensive ones are more predictable in ratio terms, even though their euro errors are larger. Third, because the interval uses one width for everyone, it under-covers the cheapest quarter (74%) and over-covers the most expensive quarter (96%). A width that depended on the predicted fee would fix this, but that is a design choice to make before looking at a test set, not after.
+
+![Fees inflate over time, and a model without a time term drifts low](docs/results/charts/03_fee_drift.png)
+
+**How to read it.** The top panel is the median reported fee in the study cohort per transfer cycle (red for the two test cycles). The black line is the trailing league price level the follow-up uses. The bottom panel is the headline model's average miss per cycle, on the same "multiple of the prediction" scale as above.
+
+**What it shows.** The headline model has no notion of time, so it learns an average-era fee. That makes it too high for the early cycles (2014 fees came out about half the prediction) and too low for the recent ones (2023 and both test cycles about ×1.33). The test-set lean is the continuation of a trend visible inside the training window. It is not bad luck on the holdout. That is the diagnosis the follow-up's price-level term acts on.
 
 ### What the errors look like
 
@@ -149,6 +157,18 @@ Reading:
 - **The headline interval over-covers, and its misses are lopsided.** At 80% nominal it covers about 85% of test transfers. The CV fold models were trained on fewer rows than the final model, so their errors, and therefore the widths, are a little too large. That is the safe direction. Twice as many fees land above the interval as below it, which is the time drift from the diagnostics showing up again (the calibration errors themselves average +0.19 on the log scale).
 - **The price-level term fixes the lopsidedness more than the width.** The follow-up's interval is only slightly narrower, but its misses split roughly evenly above and below. The context inputs narrow it further, most visibly at 90%.
 - **The width is the finding.** "Within about 4× either way, four times in five" is how precise recent PL performance, age, and position can be about a reported fee. Coverage is marginal. It holds on average over transfers, not for any one player, and it assumes the next cycles' errors look like the last training cycles' errors.
+
+![Every interval covers at least what it promises](docs/results/charts/06_interval_coverage.png)
+
+**How to read it.** One bar per model and level. The pale part is the share of test transfers whose reported fee fell inside the interval, starting from zero so it can be compared directly with the dotted tick at the promised level (80% or 90%). The blue and red ends are fees that landed below or above the interval. The right panel is the width itself: the factor the prediction is multiplied and divided by, and what that means in euros for the median test prediction.
+
+**What it shows.** Every pale bar reaches past its tick, so none of the intervals under-deliver on this holdout. The difference between models is in the shape of the misses and the width. The headline's 80% misses fall above twice as often as below (10% against 5%). With the price-level term the split is close to even. The context inputs then shrink the 80% factor from 3.81 to 3.26 and the 90% factor from 5.76 to 4.27, without losing coverage. For a typical test transfer, the enriched model's 90% range is €2.4m to €44m against €1.6m to €54m for the headline.
+
+![The 25 biggest test fees against the headline model's 80% interval](docs/results/charts/07_biggest_fees_intervals.png)
+
+**How to read it.** The 25 largest reported fees in the test set, biggest at the top. The pale bar is the headline model's 80% interval, the hollow dot its prediction, and the diamond the reported fee. Red diamonds and red names are fees outside the interval.
+
+**What it shows.** All 25 fees sit to the right of their predictions: at the top of the market the headline model is always too low. The interval still reaches 21 of the 25, because it is wide. Three of the four misses are also in the worst-five table: Durán and Diaby (both sold to Saudi clubs) and Neto (injury-shortened seasons). The fourth is João Félix (Atlético to Chelsea), whose PL lookback is a half-season loan: 942 minutes and 4 goals. For these players the inputs the model sees point to a mid-table fee, and the interval is not wide enough to reach the actual one.
 
 ## Follow-up after the holdout (not a headline result)
 
@@ -252,6 +272,18 @@ The headline's five worst misses under each model:
 
 Reading: this is the biggest CV gain of anything tried here, and team strength carries most of it. Removing it costs the most, and a player's club's results say something performance totals do not. The CV gain mostly does not carry over to euros on the test set. The enriched model beats the headline by a margin larger than the bootstrap noise, but against the first-round follow-up the interval includes zero. The ablation also shows that European minutes add nothing once the other inputs are in (CV improves slightly without them). They stay in because the variant set was fixed before the ablation ran, and dropping them now would be one more round of selection. Among the worst misses, the new inputs help where the missing information was about football: Diaby (Bundesliga record) and Díaz (Liverpool's results and European minutes) move much closer. They do not help where it was about the buyer or the injury record. Durán's Saudi move barely changes, and Neto does not change at all. Isak moves up but stays well short.
 
+![Richer inputs help when the missing information was about football](docs/results/charts/08_worst_misses_by_model.png)
+
+**How to read it.** One row per headline worst miss. The dots are the three models' predictions (blue headline, gold first follow-up, green enriched), and the black diamond is the reported fee. The green arrow runs from the headline prediction to the enriched one, so a long arrow toward the diamond means the new inputs closed most of the gap. The grey line under each name lists the context inputs the enriched model saw for that player.
+
+**What it shows.** The arrows are long for Diaby and Díaz and short for Durán and Neto, and the context line says why. Diaby has 2,717 minutes in another league and over 1,000 European minutes. Díaz has the highest team points per game of the five (2.19, at Liverpool) and over 1,000 European minutes. Durán and Neto have little or none of either, so the enriched model has nothing new to go on. Isak gains about €22m across the two rounds, most of it from the price-level term, but the diamond is still far to the right.
+
+![What each change bought](docs/results/charts/05_model_comparison.png)
+
+**How to read it.** Every model in this README on one chart. The left panel is the number model selection actually used: the average cross-validated error on the log scale inside the training window (the axis starts at 0.70 to make the differences visible). The right panel is the euro error on the test set. The dashed line marks the headline model in both panels. Only the headline row was pre-registered.
+
+**What it shows.** The two panels mostly agree. Boosting is worse than the headline in CV and no better on the test set. Each follow-up round lowers CV, and the test error moves the same way, from €11.20m to €9.55m to €9.19m. The last step is smaller on the test set than in CV, which is what the bootstrap above says too. Transfermarkt's market value, which sees contracts, injuries, and rumours that this feature set leaves out, is still €2.24m better than the best model here.
+
 A second data source was also checked and not used: football-data.org's API, whose free tier only serves PL seasons from 2023/24 onward and has no per-player match data beyond a top-scorer list. Nothing from it can reach the 2014 to 2023 training cycles.
 
 ## Method
@@ -322,6 +354,12 @@ How to read this:
 - **Age** is strongly negative: one SD older (about 3.3 years) cuts the prediction by roughly a third, consistent with buyers paying for resale value (a hypothesis).
 - **Goals** and **goals per 90** both help and overlap heavily. **Assists** add little once goals and minutes are known.
 - **Position** uses full one-hot encoding with an intercept, so a single position coefficient is not identifiable on its own. Only differences between positions mean anything: midfielders and forwards come out above defenders, and goalkeepers lowest.
+
+![What the models lean on](docs/results/charts/04_coefficients.png)
+
+**How to read it.** The same coefficients as the table, turned into multipliers: each bar is what a one-standard-deviation increase in that input does to the prediction, with everything else held fixed. Green raises the prediction and red lowers it. The right panel is the enriched follow-up model (post-holdout) for comparison, and "(new)" marks inputs the headline does not have.
+
+**What it shows.** Both models are mostly about playing time and age. In the headline, minutes are worth ×2.16 per SD and age ×0.64. In the enriched model, the share of available minutes takes over as the top input (×2.43), and age gets a bit stronger (×0.58). The new inputs that matter most after that are team points per game (×1.25) and the league price level (×1.20). In both models, goals and assists matter far less than playing time. The negative appearances and share-of-matches bars are the same "substitute outings" effect described above, not a penalty for playing.
 - None of this is causal. The inputs are collinear and the coefficients describe this fitted model, not the transfer market.
 
 ## Data provenance and filters
@@ -366,6 +404,7 @@ uv run --locked python scripts/fetch_data.py --config config.yaml   # ~190 MB, v
 uv run --locked tvp pipeline --config config.yaml                    # feasibility → ingest → features → train → evaluate
 uv run --locked python scripts/fetch_data.py --config followup.yaml # follow-up only: player_valuations.csv.gz (~7 MB)
 uv run --locked tvp followup --config followup.yaml                  # post-holdout follow-up; reads, never rewrites, the headline run
+uv run --locked tvp charts --config followup.yaml                    # report charts from the verified run and follow-up; fits nothing
 uv run --locked python scripts/build_report.py --config config.yaml  # publish docs/results/ and refresh README numbers
 ```
 
@@ -451,7 +490,7 @@ Commands: the quickstart above. Every published number, table, and figure comes 
 
 ## How this was built
 
-The spec ([SPEC.md](SPEC.md)) and plan ([PLAN.md](PLAN.md)) were written and reviewed by hand over several rounds. The implementation, tests, and this README were then written by an AI coding agent (Factory's Droid) in one working session, following that plan, with the owner reviewing results and asking for changes. That is why the first three commits land within seven minutes of each other: the work was built and checked locally first, then committed in three logical chunks. The commit timestamps show when the code was committed, not how long it took to build. The follow-up section came from the owner's review of the first published run. Its second round, the conformal intervals, and the boosting check came from a later review.
+The spec ([SPEC.md](SPEC.md)) and plan ([PLAN.md](PLAN.md)) were written and reviewed by hand over several rounds. The implementation, tests, and this README were then written by an AI coding agent (Factory's Droid) in one working session, following that plan, with the owner reviewing results and asking for changes. That is why the first three commits land within seven minutes of each other: the work was built and checked locally first, then committed in three logical chunks. The commit timestamps show when the code was committed, not how long it took to build. The follow-up section came from the owner's review of the first published run. Its second round, the conformal intervals, the boosting check, and the report charts came from a later review.
 
 What keeps this honest regardless of who typed it: pinned source hashes, a pinned config, one run ID behind every published number, `build_report.py --check` in CI, and a fixture test suite that checks the leakage rules directly.
 

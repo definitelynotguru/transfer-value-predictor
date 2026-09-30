@@ -20,6 +20,8 @@ import re
 import sys
 from pathlib import Path
 
+from transfer_value.charts import CHARTS
+
 ROOT = Path(__file__).resolve().parents[1]
 README = ROOT / "README.md"
 DOCS = ROOT / "docs" / "results"
@@ -38,6 +40,8 @@ PUBLISH = {
     "figures/residuals_vs_predicted.png": ART / "figures" / "residuals_vs_predicted.png",
     "figures/residual_distribution.png": ART / "figures" / "residual_distribution.png",
     "followup/followup.json": ART / "followup" / "followup.json",
+    "charts/manifest.json": ART / "charts" / "manifest.json",
+    **{f"charts/{name}": ART / "charts" / name for name in CHARTS},
 }
 
 
@@ -69,6 +73,14 @@ def collect_artifacts() -> dict[str, bytes] | None:
         raise ReportError(f"follow-up was built on run {fup['headline_run_id']}, not {rid}")
     if fup["headline_metrics_sha256"] != manifest["artifact_sha256"]["metrics.json"]:
         raise ReportError("follow-up was built against different headline metrics; rerun it")
+    charts = json.loads(PUBLISH["charts/manifest.json"].read_text())
+    if charts["headline_run_id"] != rid:
+        raise ReportError(f"charts were drawn from run {charts['headline_run_id']}, not {rid}")
+    if charts["followup_sha256"] != sha(PUBLISH["followup/followup.json"].read_bytes()):
+        raise ReportError("charts were drawn from a different follow-up; rerun tvp charts")
+    for name in CHARTS:
+        if sha(PUBLISH[f"charts/{name}"].read_bytes()) != charts["files"].get(name):
+            raise ReportError(f"artifacts/charts/{name} does not match the charts manifest")
     return {rel: src.read_bytes() for rel, src in PUBLISH.items()}
 
 
