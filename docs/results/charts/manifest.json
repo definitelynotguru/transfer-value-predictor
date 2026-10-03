@@ -1,11 +1,254 @@
 {
+  "facts": {
+    "biggest_fees": {
+      "above_prediction": 25,
+      "covered": 21,
+      "level": 0.8,
+      "misses": [
+        {
+          "appearances": 55,
+          "assists": 0,
+          "fee_eur": 77000000.0,
+          "from_club_name": "Aston Villa",
+          "goals": 12,
+          "in_worst_five": true,
+          "lookback_season_ids": "2022,2023,2024",
+          "lower_eur": 4542450.69030605,
+          "minutes": 1214,
+          "name": "Jhon Dur\u00e1n",
+          "prediction_eur": 17328436.194292154,
+          "to_club_name": "Al-Nassr",
+          "transfer_date": "2025-01-31",
+          "upper_eur": 66104111.067353
+        },
+        {
+          "appearances": 38,
+          "assists": 8,
+          "fee_eur": 60000000.0,
+          "from_club_name": "Aston Villa",
+          "goals": 6,
+          "in_worst_five": true,
+          "lookback_season_ids": "2023",
+          "lower_eur": 3563907.854490449,
+          "minutes": 2186,
+          "name": "Moussa Diaby",
+          "prediction_eur": 13595514.145051226,
+          "to_club_name": "Al-Ittihad",
+          "transfer_date": "2024-07-24",
+          "upper_eur": 51863848.3872886
+        },
+        {
+          "appearances": 38,
+          "assists": 10,
+          "fee_eur": 60000000.0,
+          "from_club_name": "Wolves",
+          "goals": 2,
+          "in_worst_five": true,
+          "lookback_season_ids": "2022,2023",
+          "lower_eur": 3891265.837977659,
+          "minutes": 2489,
+          "name": "Pedro Neto",
+          "prediction_eur": 14844311.632323137,
+          "to_club_name": "Chelsea",
+          "transfer_date": "2024-08-11",
+          "upper_eur": 56627731.4843313
+        },
+        {
+          "appearances": 16,
+          "assists": 0,
+          "fee_eur": 52000000.0,
+          "from_club_name": "Atl\u00e9tico",
+          "goals": 4,
+          "in_worst_five": false,
+          "lookback_season_ids": "2022",
+          "lower_eur": 2859586.0970876375,
+          "minutes": 942,
+          "name": "Jo\u00e3o F\u00e9lix",
+          "prediction_eur": 10908684.175285317,
+          "to_club_name": "Chelsea",
+          "transfer_date": "2024-08-21",
+          "upper_eur": 41614193.0123751
+        }
+      ],
+      "rows": 25
+    },
+    "fee_drift": {
+      "median_fee_by_cycle_eur": {
+        "2014": 6000000.0,
+        "2015": 8000000.0,
+        "2016": 11000000.0,
+        "2017": 11000000.0,
+        "2018": 10000000.0,
+        "2019": 16500000.0,
+        "2020": 16200000.0,
+        "2021": 11100000.0,
+        "2022": 12000000.0,
+        "2023": 18500000.0,
+        "2024": 12000000.0,
+        "2025": 15000000.0
+      },
+      "test_mean_log_residual_by_cycle": {
+        "2024": 0.29067721753541886,
+        "2025": 0.28693744796545906
+      },
+      "train_mean_log_residual_by_cycle": {
+        "2014": -0.7411262888214167,
+        "2015": -0.3427165786880513,
+        "2016": -0.20516083424791604,
+        "2017": -0.07241295210177354,
+        "2018": 0.0916195143040134,
+        "2019": 0.21337957313547753,
+        "2020": 0.07443758960630677,
+        "2021": -0.06950414836668925,
+        "2022": 0.06578801270023504,
+        "2023": 0.28376984921718257
+      }
+    },
+    "predicted_vs_reported": {
+      "coverage": 0.8457943925233645,
+      "factor": 3.814776331308576,
+      "level": 0.8,
+      "rows": 214,
+      "share_above_upper": 0.102803738317757,
+      "share_below_lower": 0.0514018691588785,
+      "share_underpredicted": 0.7009345794392523,
+      "worst_misses": [
+        {
+          "above_upper": false,
+          "fee_eur": 145000000.0,
+          "log_residual": 0.5931519941678012,
+          "name": "Alexander Isak",
+          "position": "FW",
+          "prediction_eur": 80124505.42418809,
+          "rank": 1
+        },
+        {
+          "above_upper": true,
+          "fee_eur": 77000000.0,
+          "log_residual": 1.491456514389487,
+          "name": "Jhon Dur\u00e1n",
+          "position": "FW",
+          "prediction_eur": 17328436.194292154,
+          "rank": 2
+        },
+        {
+          "above_upper": true,
+          "fee_eur": 60000000.0,
+          "log_residual": 1.4846046092786658,
+          "name": "Moussa Diaby",
+          "position": "FW",
+          "prediction_eur": 13595514.145051226,
+          "rank": 3
+        },
+        {
+          "above_upper": false,
+          "fee_eur": 70000000.0,
+          "log_residual": 1.0368722227149618,
+          "name": "Luis D\u00edaz",
+          "position": "FW",
+          "prediction_eur": 24819335.169276867,
+          "rank": 4
+        },
+        {
+          "above_upper": true,
+          "fee_eur": 60000000.0,
+          "log_residual": 1.3967277747209366,
+          "name": "Pedro Neto",
+          "position": "FW",
+          "prediction_eur": 14844311.632323137,
+          "rank": 5
+        }
+      ]
+    },
+    "residual_structure": {
+      "bands": [
+        {
+          "iqr_log": 1.720966710820833,
+          "median_log_residual": 0.15117478618147473,
+          "predicted_max_eur": 5194379.523544699,
+          "predicted_min_eur": 1748839.0541312366,
+          "rows": 36
+        },
+        {
+          "iqr_log": 1.2166488077875108,
+          "median_log_residual": 0.4848623720250327,
+          "predicted_max_eur": 7109885.63571025,
+          "predicted_min_eur": 5202997.897809119,
+          "rows": 36
+        },
+        {
+          "iqr_log": 1.154760924314591,
+          "median_log_residual": 0.13013779404425918,
+          "predicted_max_eur": 9347501.544237485,
+          "predicted_min_eur": 7225776.665086834,
+          "rows": 36
+        },
+        {
+          "iqr_log": 0.9338156162027529,
+          "median_log_residual": 0.2757264219023341,
+          "predicted_max_eur": 11654876.110363763,
+          "predicted_min_eur": 9349578.64358221,
+          "rows": 36
+        },
+        {
+          "iqr_log": 0.8854559919300531,
+          "median_log_residual": 0.34772074537858444,
+          "predicted_max_eur": 18331901.902589727,
+          "predicted_min_eur": 11777775.167341573,
+          "rows": 35
+        },
+        {
+          "iqr_log": 0.5096551080951581,
+          "median_log_residual": 0.4588392884306671,
+          "predicted_max_eur": 80124505.42418809,
+          "predicted_min_eur": 18601603.76915869,
+          "rows": 35
+        }
+      ],
+      "coverage_by_quarter": [
+        {
+          "coverage": 0.7407407407407407,
+          "predicted_max_eur": 5914966.753611556,
+          "predicted_min_eur": 1748839.0541312366,
+          "rows": 54,
+          "share_above_upper": 0.16666666666666666,
+          "share_below_lower": 0.09259259259259259
+        },
+        {
+          "coverage": 0.8148148148148148,
+          "predicted_max_eur": 9347501.544237485,
+          "predicted_min_eur": 5955784.888589261,
+          "rows": 54,
+          "share_above_upper": 0.12962962962962962,
+          "share_below_lower": 0.05555555555555555
+        },
+        {
+          "coverage": 0.8679245283018868,
+          "predicted_max_eur": 14565819.658843951,
+          "predicted_min_eur": 9349578.64358221,
+          "rows": 53,
+          "share_above_upper": 0.07547169811320754,
+          "share_below_lower": 0.05660377358490566
+        },
+        {
+          "coverage": 0.9622641509433962,
+          "predicted_max_eur": 80124505.42418809,
+          "predicted_min_eur": 14844311.632323137,
+          "rows": 53,
+          "share_above_upper": 0.03773584905660377,
+          "share_below_lower": 0.0
+        }
+      ],
+      "level": 0.8
+    }
+  },
   "files": {
     "01_predicted_vs_reported.png": "11eaab2447d95e4a4de95239c1b38244fa4b84c70544342873c00bcd7d218ba1",
     "02_residual_structure.png": "ff254cd3dc2faa0954164c761bc97c83100054f98b9d91b120715e1542d06332",
     "03_fee_drift.png": "aca23d82c06a18b7dbae567bf3a3eb01484ae42ca799627ed6dbc99d25d3d54c",
     "04_coefficients.png": "1cf6f8f1cfd4a326942904251c91705243d5cc62177b7c3378eedccefcb99165",
     "05_model_comparison.png": "67c80ba7142c19ee7d79f55cfa584d489ec9377edcc68f16333492ffcb1d84c2",
-    "06_interval_coverage.png": "8bb86f0ddf2141cd3660235f7c984fe81275418c8843b4fdaa3ad68eb859bbfb",
+    "06_interval_coverage.png": "4d7e7e004c6c404ab4a13e9e886f85b19a35dc68252eb7f83888bb72c27f629e",
     "07_biggest_fees_intervals.png": "23c3b01dfe0e43d790ee2a75bd47fe1811becc8e010fc348f015318c36f9f5b1",
     "08_worst_misses_by_model.png": "08372405028d7f975b14a07f4c46d5c4c9ba262c2d4bf145f2aad590dea59a6b"
   },

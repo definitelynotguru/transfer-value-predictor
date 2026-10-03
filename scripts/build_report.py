@@ -16,6 +16,7 @@ import csv
 import hashlib
 import io
 import json
+import math
 import re
 import sys
 from pathlib import Path
@@ -316,6 +317,11 @@ def render(docs: dict[str, bytes]) -> dict[str, str]:
     )
 
     blocks.update(render_followup(j["followup/followup.json"]))
+    facts = j["charts/manifest.json"]["facts"]
+    blocks["predicted_vs_reported"] = render_predicted_vs_reported(facts["predicted_vs_reported"])
+    blocks["residual_spread"] = render_residual_spread(facts["residual_structure"])
+    blocks["fee_drift"] = render_fee_drift(facts["fee_drift"])
+    blocks["biggest_fees"] = render_biggest_fees(facts["biggest_fees"])
 
     env = man["environment"]
     deps = ", ".join(f"{k} {v}" for k, v in env["dependencies"].items())
@@ -334,6 +340,67 @@ def render(docs: dict[str, bytes]) -> dict[str, str]:
         f"{sw['test_start']}\n\n" + src
     )
     return blocks
+
+
+def render_predicted_vs_reported(f: dict) -> str:
+    worst = "; ".join(
+        f"{w['rank']} {w['name']} ({w['position']}) {m(w['fee_eur'], 1)} against "
+        f"{m(w['prediction_eur'], 1)}, ×{math.exp(w['log_residual']):.2f} the prediction, "
+        f"{'above' if w['above_upper'] else 'inside'} the band"
+        for w in f["worst_misses"]
+    )
+    return (
+        f"Headline model on the {f['rows']} test transfers: {_pct(f['share_underpredicted'])} "
+        f"under-predicted. {_pct(f['level'])} band ×/÷ {f['factor']:.2f}: "
+        f"{_pct(f['coverage'])} inside, {_pct(f['share_above_upper'])} above the upper end, "
+        f"{_pct(f['share_below_lower'])} below the lower end. Numbered worst misses: {worst}."
+    )
+
+
+def render_fee_drift(f: dict) -> str:
+    def ratios(d: dict) -> str:
+        return ", ".join(f"{c} ×{math.exp(v):.2f}" for c, v in d.items())
+
+    return (
+        "Reported fee as a multiple of the headline prediction (exp of the mean log residual) "
+        f"by cycle. Training, in-sample: {ratios(f['train_mean_log_residual_by_cycle'])}. "
+        f"Test: {ratios(f['test_mean_log_residual_by_cycle'])}."
+    )
+
+
+def render_biggest_fees(f: dict) -> str:
+    misses = "; ".join(
+        f"{x['name']}, {x['from_club_name']} → {x['to_club_name']} ({x['transfer_date']}): "
+        f"{m(x['fee_eur'], 1)} against an interval of {m(x['lower_eur'], 1)} to "
+        f"{m(x['upper_eur'], 1)} (prediction {m(x['prediction_eur'], 1)}), "
+        f"{'in' if x['in_worst_five'] else 'not in'} the worst five; PL lookback "
+        f"{x['lookback_season_ids']}: {x['minutes']:,} min, {x['appearances']} apps, "
+        f"{x['goals']} G, {x['assists']} A"
+        for x in f["misses"]
+    )
+    return (
+        f"Of the {f['rows']} largest test fees, {f['above_prediction']} sit above the headline "
+        f"prediction and {f['covered']} fall inside the {_pct(f['level'])} interval. Outside "
+        f"it: {misses}."
+    )
+
+
+def render_residual_spread(f: dict) -> str:
+    def rng(x: dict) -> str:
+        return f"{m(x['predicted_min_eur'], 1)} to {m(x['predicted_max_eur'], 1)}"
+
+    bands = "; ".join(
+        f"{rng(b)} ({b['rows']}): median {b['median_log_residual']:+.2f}, middle half "
+        f"{b['iqr_log']:.2f} (a factor of {math.exp(b['iqr_log']):.1f})"
+        for b in f["bands"]
+    )
+    quarters = "; ".join(
+        f"{rng(x)} ({x['rows']}): {_pct(x['coverage'])}" for x in f["coverage_by_quarter"]
+    )
+    return (
+        f"Log residual by predicted-fee band, cheapest first: {bands}. Headline "
+        f"{_pct(f['level'])} interval coverage by predicted-fee quarter: {quarters}."
+    )
 
 
 def _ci(c: dict) -> str:
@@ -614,8 +681,42 @@ def render_conformal(c: dict, followup_name: str, enriched_name: str) -> dict[st
             for k in ("headline", "followup", "enriched")
         )
         + f". Headline worst five at {_pct(c['predict_level'])}: {misses}."
+        + "\n\n"
+        + _in_season(c, labels)
     )
-    return {"conformal": text}
+    t = h["test"]
+    summary = (
+        "How wide is the honest range? A split-conformal interval around the headline model "
+        f"was sized for a nominal {_pct(c['predict_level'])} using only training-window CV "
+        f"errors, before any test row was scored. It comes out at a factor of {h['factor']:.2f} "
+        f"either way: for the median test prediction of {m(h['median_prediction_eur'], 1)}, "
+        f"that is {m(h['median_lower_eur'], 1)} to {m(h['median_upper_eur'], 1)}. On the "
+        f"holdout it then covered {_pct(t['coverage'])} of the {t['rows']} test transfers "
+        "([details](#how-wide-is-the-range-added-after-the-holdout))."
+    )
+    return {"conformal": text, "interval_summary": summary}
+
+
+def _in_season(c: dict, labels: dict[str, str]) -> str:
+    cells, short = [], []
+    for key in ("headline", "followup", "enriched"):
+        for lv, s in c[key]["levels"].items():
+            w = s.get("test_by_window", {}).get("in_season")
+            if w is None:
+                continue
+            hit = round(w["coverage"] * w["rows"])
+            cell = f"{_pct(float(lv))} {w['coverage']:.1%} ({hit} of {w['rows']})"
+            cells.append(f"{labels[key].strip('*')} {cell}")
+            if w["coverage"] < float(lv):
+                short.append(
+                    f"{labels[key].strip('*')} at {_pct(float(lv))} covers {w['coverage']:.1%} "
+                    f"({hit} of {w['rows']}; {_pct(w['share_below_lower'])} below the lower "
+                    f"end, {_pct(w['share_above_upper'])} above the upper)"
+                )
+    text = "In-season test transfers only: " + "; ".join(cells) + "."
+    if short:
+        text += " Below nominal: " + "; ".join(short) + "."
+    return text
 
 
 def render_boosting(b: dict, head: dict) -> str:

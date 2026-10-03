@@ -8,7 +8,11 @@ Short answer: a plain linear model on `log1p(fee)` beats every naive baseline by
 
 A [follow-up designed after the holdout was opened](#follow-up-after-the-holdout-not-a-headline-result) adds exposure-normalized inputs and a fee-inflation term, picked by the same training-window CV. It cuts test MAE by about €1.6m. A second post-holdout round adds as-of context from the same raw snapshot (European cup minutes, other-league minutes and goals, team points per game). That improves CV clearly, but on the test set it is not distinguishable from the first follow-up. Transfermarkt's own market value, shown as a comparison row only, still beats every model here. The headline numbers below are the pre-registered run and are unchanged.
 
-How wide is the honest range? A conformal interval around the headline model, calibrated on training-window CV errors only, needs [a factor of about 3.8 either way](#how-wide-is-the-range-added-after-the-holdout) to cover 80% of transfers. For a €9m prediction, that means roughly €2m to €36m. Gradient boosting, with or without monotonic constraints, [does not fix the compressed elite fees](#follow-up-after-the-holdout-not-a-headline-result).
+<!-- BEGIN:interval_summary -->
+How wide is the honest range? A split-conformal interval around the headline model was sized for a nominal 80% using only training-window CV errors, before any test row was scored. It comes out at a factor of 3.81 either way: for the median test prediction of €9.3m, that is €2.4m to €35.6m. On the holdout it then covered 85% of the 214 test transfers ([details](#how-wide-is-the-range-added-after-the-holdout)).
+<!-- END:interval_summary -->
+
+Gradient boosting, with or without monotonic constraints, [does not fix the compressed elite fees](#follow-up-after-the-holdout-not-a-headline-result).
 
 ## What this is, and what it is not
 
@@ -69,19 +73,31 @@ These charts are drawn by `tvp charts` from the verified headline run and the fo
 
 **How to read it.** Each dot is one of the 214 test transfers, placed by what the headline model predicted (across) and what was reported (up). Both axes are log scales, so equal distances mean equal ratios, and a €1m miss on a €2m player looks as big as a €50m miss on a €100m one. Dots on the dashed diagonal were predicted exactly. Dots above it were under-predicted.
 
-**What it shows.** The cloud rises with the diagonal, so the model gets the order roughly right: players it rates higher do tend to cost more. But the cloud sits above the line (70% of transfers are under-predicted), and its vertical spread is wide. The blue band is the 80% interval, the prediction multiplied or divided by 3.8. It contains 85% of the dots, and most of the dots outside it sit above it. The numbered points are the five worst euro misses, all forwards and all well above the band's centre.
+**What it shows.** The cloud rises with the diagonal, so the model gets the order roughly right: players it rates higher do tend to cost more. But most of the cloud sits above the line, and its vertical spread is wide. The blue band is the 80% interval: the prediction multiplied or divided by one fixed factor. It contains more than 80% of the dots, and more of the dots outside it sit above it than below. The numbered points are the five worst euro misses, all forwards and all well above the band's centre. The figures behind the chart:
+
+<!-- BEGIN:predicted_vs_reported -->
+Headline model on the 214 test transfers: 70% under-predicted. 80% band ×/÷ 3.81: 85% inside, 10% above the upper end, 5% below the lower end. Numbered worst misses: 1 Alexander Isak (FW) €145.0m against €80.1m, ×1.81 the prediction, inside the band; 2 Jhon Durán (FW) €77.0m against €17.3m, ×4.44 the prediction, above the band; 3 Moussa Diaby (FW) €60.0m against €13.6m, ×4.41 the prediction, above the band; 4 Luis Díaz (FW) €70.0m against €24.8m, ×2.82 the prediction, inside the band; 5 Pedro Neto (FW) €60.0m against €14.8m, ×4.04 the prediction, above the band.
+<!-- END:predicted_vs_reported -->
 
 ![Misses are multiplicative, lean high, and shrink as prices rise](docs/results/charts/02_residual_structure.png)
 
 **How to read it.** The vertical axis is the reported fee as a multiple of the prediction: "×2" means the fee was twice the prediction, "÷2" half. The left panel splits the test set into six equal-size bands by predicted fee. For each band, the red dot is the median miss and the red bar covers the middle half of the misses. The middle panel is the same misses as a histogram. The right panel asks how often the fixed-width 80% interval contained the fee within each quarter of the predicted-fee range.
 
-**What it shows.** Three things. First, every band's median sits above "same", so the lean toward under-prediction holds at every price, not just for the stars. Second, the misses get tighter as the prediction rises: the middle half of the cheapest band spans a factor of about 5.6 (1.72 on the log scale), the most expensive about 1.7 (0.51). Cheap transfers are noisy, and expensive ones are more predictable in ratio terms, even though their euro errors are larger. Third, because the interval uses one width for everyone, it under-covers the cheapest quarter (74%) and over-covers the most expensive quarter (96%). A width that depended on the predicted fee would fix this, but that is a design choice to make before looking at a test set, not after.
+**What it shows.** Three things. First, every band's median sits above "same", so the lean toward under-prediction holds at every price, not just for the stars. Second, the misses get tighter as the prediction rises: the middle half of the cheapest band spans a much wider factor than the most expensive band's. Cheap transfers are noisy, and expensive ones are more predictable in ratio terms, even though their euro errors are larger. Third, because the interval uses one width for everyone, it under-covers the cheapest quarter and over-covers the most expensive one. A width that depended on the predicted fee would fix this, but that is a design choice to make before looking at a test set, not after. The exact figures behind the chart:
+
+<!-- BEGIN:residual_spread -->
+Log residual by predicted-fee band, cheapest first: €1.7m to €5.2m (36): median +0.15, middle half 1.72 (a factor of 5.6); €5.2m to €7.1m (36): median +0.48, middle half 1.22 (a factor of 3.4); €7.2m to €9.3m (36): median +0.13, middle half 1.15 (a factor of 3.2); €9.3m to €11.7m (36): median +0.28, middle half 0.93 (a factor of 2.5); €11.8m to €18.3m (35): median +0.35, middle half 0.89 (a factor of 2.4); €18.6m to €80.1m (35): median +0.46, middle half 0.51 (a factor of 1.7). Headline 80% interval coverage by predicted-fee quarter: €1.7m to €5.9m (54): 74%; €6.0m to €9.3m (54): 81%; €9.3m to €14.6m (53): 87%; €14.8m to €80.1m (53): 96%.
+<!-- END:residual_spread -->
 
 ![Fees inflate over time, and a model without a time term drifts low](docs/results/charts/03_fee_drift.png)
 
 **How to read it.** The top panel is the median reported fee in the study cohort per transfer cycle (red for the two test cycles). The black line is the trailing league price level the follow-up uses. The bottom panel is the headline model's average miss per cycle, on the same "multiple of the prediction" scale as above.
 
-**What it shows.** The headline model has no notion of time, so it learns an average-era fee. That makes it too high for the early cycles (2014 fees came out about half the prediction) and too low for the recent ones (2023 and both test cycles about ×1.33). The test-set lean is the continuation of a trend visible inside the training window. It is not bad luck on the holdout. That is the diagnosis the follow-up's price-level term acts on.
+**What it shows.** The headline model has no notion of time, so it learns an average-era fee. That makes it too high for the early cycles and too low for the recent ones, including both test cycles (per-cycle figures below). The test-set lean is the continuation of a trend visible inside the training window. It is not bad luck on the holdout. That is the diagnosis the follow-up's price-level term acts on.
+
+<!-- BEGIN:fee_drift -->
+Reported fee as a multiple of the headline prediction (exp of the mean log residual) by cycle. Training, in-sample: 2014 ×0.48, 2015 ×0.71, 2016 ×0.81, 2017 ×0.93, 2018 ×1.10, 2019 ×1.24, 2020 ×1.08, 2021 ×0.93, 2022 ×1.07, 2023 ×1.33. Test: 2024 ×1.34, 2025 ×1.33.
+<!-- END:fee_drift -->
 
 ### What the errors look like
 
@@ -150,6 +166,8 @@ The same procedure is repeated once for the two follow-up models further down, a
 | Enriched follow-up (exposure+price_level+context) | 90% | 204 | ×/÷ 4.27 | 94% | 2% | 4% | €2.4m to €43.9m |
 
 Headline at 80%, test coverage by cycle: 2024 81%, 2025 87%; by position: DF 86%, FW 84%, GK 80%, MF 86%; by window: in_season 82%, off_season 86%. Mean calibration residual (log scale): headline +0.185, followup +0.004, enriched -0.019. Headline worst five at 80%: Alexander Isak €145m in €21.0m to €306m (covered); Jhon Durán €77m in €4.5m to €66m (missed); Moussa Diaby €60m in €3.6m to €52m (missed); Luis Díaz €70m in €6.5m to €95m (covered); Pedro Neto €60m in €3.9m to €57m (missed).
+
+In-season test transfers only: Headline (LinearRegression) 80% 82.2% (74 of 90); Headline (LinearRegression) 90% 95.6% (86 of 90); Follow-up (exposure+price_level) 80% 78.9% (71 of 90); Follow-up (exposure+price_level) 90% 93.3% (84 of 90); Enriched follow-up (exposure+price_level+context) 80% 81.1% (73 of 90); Enriched follow-up (exposure+price_level+context) 90% 88.9% (80 of 90). Below nominal: Follow-up (exposure+price_level) at 80% covers 78.9% (71 of 90; 14% below the lower end, 7% above the upper); Enriched follow-up (exposure+price_level+context) at 90% covers 88.9% (80 of 90; 9% below the lower end, 2% above the upper).
 <!-- END:conformal -->
 
 Reading:
@@ -158,17 +176,21 @@ Reading:
 - **The price-level term fixes the lopsidedness more than the width.** The follow-up's interval is only slightly narrower, but its misses split roughly evenly above and below. The context inputs narrow it further, most visibly at 90%.
 - **The width is the finding.** "Within about 4× either way, four times in five" is how precise recent PL performance, age, and position can be about a reported fee. Coverage is marginal. It holds on average over transfers, not for any one player, and it assumes the next cycles' errors look like the last training cycles' errors.
 
-![Every interval covers at least what it promises](docs/results/charts/06_interval_coverage.png)
+![On the full holdout, every interval covers what it promises; in-season transfers do not always](docs/results/charts/06_interval_coverage.png)
 
 **How to read it.** One bar per model and level. The pale part is the share of test transfers whose reported fee fell inside the interval, starting from zero so it can be compared directly with the dotted tick at the promised level (80% or 90%). The blue and red ends are fees that landed below or above the interval. The right panel is the width itself: the factor the prediction is multiplied and divided by, and what that means in euros for the median test prediction.
 
-**What it shows.** Every pale bar reaches past its tick, so none of the intervals under-deliver on this holdout. The difference between models is in the shape of the misses and the width. The headline's 80% misses fall above twice as often as below (10% against 5%). With the price-level term the split is close to even. The context inputs then shrink the 80% factor from 3.81 to 3.26 and the 90% factor from 5.76 to 4.27, without losing coverage. For a typical test transfer, the enriched model's 90% range is €2.4m to €44m against €1.6m to €54m for the headline.
+**What it shows.** Every pale bar reaches past its tick, so on the full holdout none of the intervals under-deliver. That does not hold in every subgroup. The diamonds show coverage for in-season (mostly January) transfers only, and the in-season line under the table above lists the exact counts. The follow-up's 80% interval and the enriched model's 90% interval both fall short of their promised level there, and in both cases the misses are mostly fees below the interval. That matches the [window finding](#did-the-winter-window-fix-work): in-season transfers are predicted too high. Coverage is promised on average over transfers, so a shortfall in one subgroup of 90 does not break it, but it is a reason not to read the interval as equally reliable for every kind of transfer. The difference between models is in the shape of the misses and the width. The headline's 80% misses fall above twice as often as below (10% against 5%). With the price-level term the split is close to even. The context inputs then shrink the 80% factor from 3.81 to 3.26 and the 90% factor from 5.76 to 4.27, without losing coverage. For a typical test transfer, the enriched model's 90% range is €2.4m to €44m against €1.6m to €54m for the headline.
 
 ![The 25 biggest test fees against the headline model's 80% interval](docs/results/charts/07_biggest_fees_intervals.png)
 
 **How to read it.** The 25 largest reported fees in the test set, biggest at the top. The pale bar is the headline model's 80% interval, the hollow dot its prediction, and the diamond the reported fee. Red diamonds and red names are fees outside the interval.
 
-**What it shows.** All 25 fees sit to the right of their predictions: at the top of the market the headline model is always too low. The interval still reaches 21 of the 25, because it is wide. Three of the four misses are also in the worst-five table: Durán and Diaby (both sold to Saudi clubs) and Neto (injury-shortened seasons). The fourth is João Félix (Atlético to Chelsea), whose PL lookback is a half-season loan: 942 minutes and 4 goals. For these players the inputs the model sees point to a mid-table fee, and the interval is not wide enough to reach the actual one.
+**What it shows.** At the top of the market the headline model is too low: the fees sit to the right of their predictions. The interval still reaches most of them, because it is wide. Durán and Diaby (both sold to Saudi clubs) and Neto (injury-shortened seasons) miss it and are also in the worst-five table. João Félix (Atlético to Chelsea) misses it without being in the worst five. His PL lookback is a single half-season loan, with the minutes and goals listed below. For these players the inputs the model sees point to a mid-table fee, and the interval is not wide enough to reach the actual one. The counts and each miss:
+
+<!-- BEGIN:biggest_fees -->
+Of the 25 largest test fees, 25 sit above the headline prediction and 21 fall inside the 80% interval. Outside it: Jhon Durán, Aston Villa → Al-Nassr (2025-01-31): €77.0m against an interval of €4.5m to €66.1m (prediction €17.3m), in the worst five; PL lookback 2022,2023,2024: 1,214 min, 55 apps, 12 G, 0 A; Moussa Diaby, Aston Villa → Al-Ittihad (2024-07-24): €60.0m against an interval of €3.6m to €51.9m (prediction €13.6m), in the worst five; PL lookback 2023: 2,186 min, 38 apps, 6 G, 8 A; Pedro Neto, Wolves → Chelsea (2024-08-11): €60.0m against an interval of €3.9m to €56.6m (prediction €14.8m), in the worst five; PL lookback 2022,2023: 2,489 min, 38 apps, 2 G, 10 A; João Félix, Atlético → Chelsea (2024-08-21): €52.0m against an interval of €2.9m to €41.6m (prediction €10.9m), not in the worst five; PL lookback 2022: 942 min, 16 apps, 4 G, 0 A.
+<!-- END:biggest_fees -->
 
 ## Follow-up after the holdout (not a headline result)
 
@@ -421,6 +443,8 @@ uv run --locked python scripts/build_report.py --check
 ## Prediction CLI (demo only)
 
 `tvp predict` reuses the saved headline model and the same feature builder. It refuses dates the model could have seen in training and dates beyond source coverage. The default as-of date is the end of the 2025/26 season. After `tvp followup` has run, it also prints the headline model's 80% [training-set conformal interval](#how-wide-is-the-range-added-after-the-holdout). It checks that the interval was calibrated for the same run and model.
+
+The output below is hand-copied from a terminal against run `751f64196525f1a9`. It is not one of the blocks that `build_report.py` generates, so `--check` does not compare it with the published files. Re-run the commands to confirm it.
 
 ```text
 $ uv run --locked tvp predict --player "Cole Palmer"

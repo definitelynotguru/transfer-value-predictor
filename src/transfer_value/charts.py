@@ -202,11 +202,44 @@ def _footer(d: dict, extra: str = "") -> str:
     return f"{base} {extra}".strip()
 
 
+def _worst(p, k: int = 5):
+    return p.sort_values(["abs_error_eur", "transfer_id"], ascending=[False, True]).head(k)
+
+
+def predicted_vs_reported_facts(d: dict) -> dict:
+    p, conf = d["pred"], d["fu"]["conformal"]["headline"]["levels"]["0.80"]
+    q = conf["q_log"]
+    r = np.log1p(p["fee_eur"].to_numpy()) - p["prediction_log"].to_numpy()
+    worst = _worst(p)
+    wr = np.log1p(worst["fee_eur"].to_numpy()) - worst["prediction_log"].to_numpy()
+    return {
+        "level": 0.8,
+        "rows": len(r),
+        "factor": conf["factor"],
+        "share_underpredicted": float(np.mean(r > 0)),
+        "coverage": float(np.mean(np.abs(r) <= q)),
+        "share_above_upper": float(np.mean(r > q)),
+        "share_below_lower": float(np.mean(r < -q)),
+        "worst_misses": [
+            {
+                "rank": i,
+                "name": row["name"],
+                "position": row["position"],
+                "fee_eur": float(row["fee_eur"]),
+                "prediction_eur": float(row["prediction_eur"]),
+                "log_residual": float(lr),
+                "above_upper": bool(lr > q),
+            }
+            for i, ((_, row), lr) in enumerate(zip(worst.iterrows(), wr, strict=True), start=1)
+        ],
+    }
+
+
 def chart_predicted_vs_reported(d: dict, path: Path) -> None:
     p, conf = d["pred"], d["fu"]["conformal"]["headline"]["levels"]["0.80"]
-    q, f = conf["q_log"], conf["factor"]
+    f = conf["factor"]
     x, y = p["prediction_eur"].to_numpy(), p["fee_eur"].to_numpy()
-    r = np.log1p(y) - p["prediction_log"].to_numpy()
+    facts = predicted_vs_reported_facts(d)
     fig = _figure(
         10.5,
         8.2,
@@ -245,7 +278,7 @@ def chart_predicted_vs_reported(d: dict, path: Path) -> None:
             label=f"{POSITION_NAMES[pos]} ({g.sum()})",
             zorder=3,
         )
-    worst = p.sort_values(["abs_error_eur", "transfer_id"], ascending=[False, True]).head(5)
+    worst = _worst(p)
     worst = worst.assign(rank=range(1, len(worst) + 1))
     # Worst misses cluster together; alternating sides by predicted fee keeps numbers apart.
     for i, (_, row) in enumerate(worst.sort_values("prediction_eur").iterrows()):
@@ -285,9 +318,10 @@ def chart_predicted_vs_reported(d: dict, path: Path) -> None:
     ax.set_xlabel("Predicted fee")
     ax.set_ylabel("Reported fee")
     stats = (
-        f"Under-predicted: {np.mean(r > 0):.0%} of {len(r)}\n"
-        f"Inside the 80% band: {np.mean(np.abs(r) <= q):.0%}\n"
-        f"Above the band: {np.mean(r > q):.0%}   below: {np.mean(r < -q):.0%}"
+        f"Under-predicted: {facts['share_underpredicted']:.0%} of {facts['rows']}\n"
+        f"Inside the 80% band: {facts['coverage']:.0%}\n"
+        f"Above the band: {facts['share_above_upper']:.0%}   "
+        f"below: {facts['share_below_lower']:.0%}"
     )
     ax.text(
         0.98,
@@ -309,11 +343,45 @@ def _bins(order: np.ndarray, n_bins: int) -> list[np.ndarray]:
     return [b for b in np.array_split(order, min(n_bins, len(order))) if len(b)]
 
 
+def residual_structure_facts(d: dict) -> dict:
+    """The numbers chart 2 draws, kept in the charts manifest so the README can quote them."""
+    p = d["pred"]
+    q = d["fu"]["conformal"]["headline"]["levels"]["0.80"]["q_log"]
+    pred = p["prediction_eur"].to_numpy()
+    r = np.log1p(p["fee_eur"].to_numpy()) - p["prediction_log"].to_numpy()
+    order = np.argsort(pred)
+    bands = []
+    for b in _bins(order, 6):
+        q1, med, q3 = np.percentile(r[b], [25, 50, 75])
+        bands.append(
+            {
+                "rows": len(b),
+                "predicted_min_eur": float(pred[b].min()),
+                "predicted_max_eur": float(pred[b].max()),
+                "median_log_residual": float(med),
+                "iqr_log": float(q3 - q1),
+            }
+        )
+    quarters = [
+        {
+            "rows": len(b),
+            "predicted_min_eur": float(pred[b].min()),
+            "predicted_max_eur": float(pred[b].max()),
+            "coverage": float(np.mean(np.abs(r[b]) <= q)),
+            "share_above_upper": float(np.mean(r[b] > q)),
+            "share_below_lower": float(np.mean(r[b] < -q)),
+        }
+        for b in _bins(order, 4)
+    ]
+    return {"level": 0.8, "bands": bands, "coverage_by_quarter": quarters}
+
+
 def chart_residual_structure(d: dict, path: Path) -> None:
     p = d["pred"]
     q = d["fu"]["conformal"]["headline"]["levels"]["0.80"]["q_log"]
     pred = p["prediction_eur"].to_numpy()
     r = np.log1p(p["fee_eur"].to_numpy()) - p["prediction_log"].to_numpy()
+    facts = residual_structure_facts(d)
     fig = _figure(
         12,
         7.2,
@@ -380,12 +448,14 @@ def chart_residual_structure(d: dict, path: Path) -> None:
     axh.set_title("Distribution")
 
     axc = fig.add_subplot(gs[2])
-    labels, cover, above, below = [], [], [], []
-    for b in _bins(order, 4):
-        labels.append(f"Predicted {_eur(pred[b].min())} to {_eur(pred[b].max())} ({len(b)})")
-        cover.append(np.mean(np.abs(r[b]) <= q))
-        above.append(np.mean(r[b] > q))
-        below.append(np.mean(r[b] < -q))
+    qs = facts["coverage_by_quarter"]
+    labels = [
+        f"Predicted {_eur(x['predicted_min_eur'])} to {_eur(x['predicted_max_eur'])} ({x['rows']})"
+        for x in qs
+    ]
+    cover = [x["coverage"] for x in qs]
+    above = [x["share_above_upper"] for x in qs]
+    below = [x["share_below_lower"] for x in qs]
     yy = np.arange(len(labels))[::-1] * 1.3
     _coverage_bars(axc, yy, cover, below, above, height=0.6)
     for yv, lab in zip(yy, labels, strict=True):
@@ -433,12 +503,27 @@ def _coverage_legend() -> list:
     ]
 
 
-def chart_fee_drift(d: dict, path: Path) -> None:
+def fee_drift_facts(d: dict) -> dict:
     diag = d["metrics"]["residual_diagnostics"]
-    med = {int(k): v for k, v in diag["median_fee_by_cycle_eur"].items()}
+
+    def by_cycle(key: str) -> dict[str, float]:
+        return {
+            str(int(k)): float(v) for k, v in sorted(diag[key].items(), key=lambda kv: int(kv[0]))
+        }
+
+    return {
+        "train_mean_log_residual_by_cycle": by_cycle("train_in_sample_mean_log_residual_by_cycle"),
+        "test_mean_log_residual_by_cycle": by_cycle("test_mean_log_residual_by_cycle"),
+        "median_fee_by_cycle_eur": by_cycle("median_fee_by_cycle_eur"),
+    }
+
+
+def chart_fee_drift(d: dict, path: Path) -> None:
+    facts = fee_drift_facts(d)
+    med = {int(k): v for k, v in facts["median_fee_by_cycle_eur"].items()}
     level = {int(k): v for k, v in d["fu"]["price_level"]["by_cycle_median_level_eur"].items()}
-    tr = {int(k): v for k, v in diag["train_in_sample_mean_log_residual_by_cycle"].items()}
-    te = {int(k): v for k, v in diag["test_mean_log_residual_by_cycle"].items()}
+    tr = {int(k): v for k, v in facts["train_mean_log_residual_by_cycle"].items()}
+    te = {int(k): v for k, v in facts["test_mean_log_residual_by_cycle"].items()}
     cycles = sorted(med)
     test_cycles = sorted(te)
     fig = _figure(
@@ -678,22 +763,36 @@ def chart_interval_coverage(d: dict, path: Path) -> None:
         for lv, s in conf[key]["levels"].items():
             rows.append((key, float(lv), s))
     head80 = conf["headline"]["levels"][f"{conf['predict_level']:.2f}"]["test"]
+    full_ok = all(s["test"]["coverage"] >= lv for _, lv, s in rows)
+    in_season = [s.get("test_by_window", {}).get("in_season", {}).get("coverage") for *_, s in rows]
+    short = [
+        f"{k.replace('followup', 'follow-up')} {lv:.0%} covers {w:.1%}"
+        for (k, lv, _), w in zip(rows, in_season, strict=True)
+        if w is not None and w < lv
+    ]
     fig = _figure(
         12,
         6.8,
-        "Every interval covers at least what it promises",
+        "On the full holdout, every interval covers what it promises"
+        if full_ok
+        else "Not every interval covers what it promises on the holdout",
         f"Each bar splits the {d['metrics']['split']['test']['rows']} test transfers into those "
-        "whose reported fee fell inside the interval, below it, or above it. The dotted tick is "
-        "the promised coverage. At 80% the headline misses high "
+        "whose reported fee fell inside the interval, below it, or above it. At 80% the "
+        "headline misses high "
         f"({head80['share_above_upper']:.0%}) about twice as often as low "
         f"({head80['share_below_lower']:.0%}), a leftover of fee inflation. The price-level "
-        "term evens that out, and the context inputs make the interval narrower.",
+        "term evens that out, and the context inputs make the interval narrower."
+        + (
+            " In-season transfers alone (diamonds) fall short: " + ", ".join(short) + "."
+            if short
+            else ""
+        ),
         _footer(
             d,
             "Widths come from training-window CV errors only, fixed before any test row is "
             "seen. The median interval is for the median test prediction.",
         ),
-        top=0.78,
+        top=0.76,
         left=0.24,
         bottom=0.17,
     )
@@ -710,9 +809,20 @@ def chart_interval_coverage(d: dict, path: Path) -> None:
         [t["share_above_upper"] for t in tests],
         height=0.66,
     )
-    for yy, (_, lv, s) in zip(y, rows, strict=True):
+    for yy, (_, lv, s), w in zip(y, rows, in_season, strict=True):
         t = s["test"]
         ax.plot([lv, lv], [yy - 0.42, yy + 0.42], color=INK, lw=1.4, ls=(0, (1.5, 1.5)))
+        if w is not None:
+            ax.scatter(
+                [w],
+                [yy],
+                marker="D",
+                s=42,
+                color="white",
+                edgecolor=RED if w < lv else INK,
+                linewidth=1.6,
+                zorder=5,
+            )
         ax.text(
             1.015,
             yy,
@@ -735,10 +845,20 @@ def chart_interval_coverage(d: dict, path: Path) -> None:
         handles=[
             *_coverage_legend(),
             Line2D([], [], color=INK, ls=(0, (1.5, 1.5)), label="Promised coverage"),
+            Line2D(
+                [],
+                [],
+                marker="D",
+                ls="",
+                color="white",
+                markeredgecolor=INK,
+                markeredgewidth=1.6,
+                label="In-season only (red: short)",
+            ),
         ],
         loc="upper center",
         bbox_to_anchor=(0.5, -0.07),
-        ncol=4,
+        ncol=5,
     )
     axw = fig.add_subplot(gs[1], sharey=ax)
     finite = [s["factor"] for _, _, s in rows if math.isfinite(s["factor"])]
@@ -766,17 +886,59 @@ def chart_interval_coverage(d: dict, path: Path) -> None:
     _save(fig, path)
 
 
-def chart_biggest_fees(d: dict, path: Path, n: int = 25) -> None:
+BIGGEST_N = 25
+
+
+def _biggest(d: dict, n: int = BIGGEST_N):
+    """Largest test fees, biggest first, with the headline 80% interval and coverage flag."""
     p = d["pred"].merge(
         d["fu_pred"][["transfer_id", "lower_eur__headline__0.80", "upper_eur__headline__0.80"]],
         on="transfer_id",
     )
-    top = p.sort_values(["fee_eur", "transfer_id"], ascending=[False, True]).head(n)[::-1]
+    top = p.sort_values(["fee_eur", "transfer_id"], ascending=[False, True]).head(n)
+    lo, hi = top["lower_eur__headline__0.80"], top["upper_eur__headline__0.80"]
+    return top.assign(covered=(top["fee_eur"] >= lo) & (top["fee_eur"] <= hi))
+
+
+def biggest_fees_facts(d: dict) -> dict:
+    top = _biggest(d)
+    worst_ids = set(_worst(d["pred"])["transfer_id"])
+    misses = top[~top["covered"]]
+    return {
+        "level": 0.8,
+        "rows": len(top),
+        "above_prediction": int((top["fee_eur"] > top["prediction_eur"]).sum()),
+        "covered": int(top["covered"].sum()),
+        "misses": [
+            {
+                "name": r["name"],
+                "from_club_name": r["from_club_name"],
+                "to_club_name": r["to_club_name"],
+                "transfer_date": f"{r['transfer_date']:%Y-%m-%d}",
+                "fee_eur": float(r["fee_eur"]),
+                "prediction_eur": float(r["prediction_eur"]),
+                "lower_eur": float(r["lower_eur__headline__0.80"]),
+                "upper_eur": float(r["upper_eur__headline__0.80"]),
+                "in_worst_five": r["transfer_id"] in worst_ids,
+                "lookback_season_ids": str(r["lookback_season_ids"]),
+                "minutes": int(r["minutes"]),
+                "appearances": int(r["appearances"]),
+                "goals": int(r["goals"]),
+                "assists": int(r["assists"]),
+            }
+            for _, r in misses.iterrows()
+        ],
+    }
+
+
+def chart_biggest_fees(d: dict, path: Path) -> None:
+    top = _biggest(d)[::-1]
+    facts = biggest_fees_facts(d)
     lo = top["lower_eur__headline__0.80"].to_numpy()
     hi = top["upper_eur__headline__0.80"].to_numpy()
     fee, pred = top["fee_eur"].to_numpy(), top["prediction_eur"].to_numpy()
-    covered = (fee >= lo) & (fee <= hi)
-    n_above = int((fee > pred).sum())
+    covered = top["covered"].to_numpy()
+    n_above = facts["above_prediction"]
     above_pred = "All of these fees" if n_above == len(top) else f"{n_above} of these fees"
     fig = _figure(
         11,
@@ -785,7 +947,7 @@ def chart_biggest_fees(d: dict, path: Path, n: int = 25) -> None:
         "Each bar is the 80% conformal interval around the headline prediction (hollow dot). "
         "The diamond is the reported fee: blue when inside, red when outside. "
         f"{above_pred} sit above the prediction, but the interval is wide enough to reach "
-        f"{covered.sum()} of {len(top)}.",
+        f"{facts['covered']} of {facts['rows']}.",
         _footer(d, "Log scale. Interval = prediction ×/÷ the same factor for every transfer."),
         top=0.83,
         left=0.35,
@@ -935,6 +1097,12 @@ def run_charts(fcfg, out: Path | None = None) -> dict:
         "headline_run_id": d["manifest"]["run_id"],
         "followup_sha256": d["followup_sha256"],
         "files": {name: sha256_file(out / name) for name in CHARTS},
+        "facts": {
+            "predicted_vs_reported": predicted_vs_reported_facts(d),
+            "residual_structure": residual_structure_facts(d),
+            "fee_drift": fee_drift_facts(d),
+            "biggest_fees": biggest_fees_facts(d),
+        },
     }
     write_json(manifest, out / "manifest.json")
     return {**manifest, "output_dir": str(out)}
